@@ -1,0 +1,31 @@
+[project]
+name = "curio-api"
+version = "0.1.0"
+description = "Curio curation + export API. The seam between the portable frontend and the VPS backend."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "pydantic>=2.6",
+  "PyJWT>=2.8",
+  "python-multipart>=0.0.9",
+  "python-pptx>=0.6.23",
+  "httpx>=0.27",
+  "Pillow>=10.0",
+  "reportlab>=4.0",
+  "pymongo>=4.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+# Add when wiring real renderers (see app/render.py):
+#   python-pptx, reportlab, python-docx, Pillow
+# Add when wiring Mongo (see app/store.py):
+#   motor
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]

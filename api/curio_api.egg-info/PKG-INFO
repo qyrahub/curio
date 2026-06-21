@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: curio-api
+Version: 0.1.0
+Summary: Curio curation + export API. The seam between the portable frontend and the VPS backend.
+Requires-Python: >=3.11
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn[standard]>=0.29
+Requires-Dist: pydantic>=2.6
+Requires-Dist: PyJWT>=2.8
+Requires-Dist: python-multipart>=0.0.9
+Requires-Dist: python-pptx>=0.6.23
+Requires-Dist: httpx>=0.27
+Requires-Dist: Pillow>=10.0
+Requires-Dist: pymongo>=4.6
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: httpx>=0.27; extra == "dev"

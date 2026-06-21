@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+.git-credentials
+.pypirc
+secrets/
+exports/
+node_modules/
+.venv/
+image_cache/

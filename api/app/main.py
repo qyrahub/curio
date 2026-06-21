@@ -1,0 +1,404 @@
+"""Curio API - the /v1 contract.
+
+This API is the SEAM between the backend (everything that matters: curation IP,
+rendering, data) and a deliberately dumb, portable frontend. Keep that boundary
+clean: the frontend only ever speaks this JSON contract over HTTPS, so it can be
+hosted anywhere (the VPS today, Lovable later) without backend changes."""
+from __future__ import annotations
+
+import uuid
+
+from fastapi.responses import Response
+import os
+import re
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+
+from . import assistant, auth, bookexport, coach, engine, images, library, modes, render, uploads
+from .auth import get_current_user
+from .config import settings
+from .models import (
+    AskReply,
+    AskRequest,
+    AuthReply,
+    Book,
+    BookRequest,
+    BrainFeed,
+    CoachPlan,
+    CoachRequest,
+    FocusArea,
+    Book,
+    BookDetail,
+    LibraryFacets,
+    BrainState,
+    CanvasTools,
+    CheckinReply,
+    CheckinRequest,
+    EduItem,
+    ExportJob,
+    ExportRequest,
+    FamilyLifestyle,
+    Itinerary,
+    ItineraryRequest,
+    Meta,
+    ParentOverview,
+    Plan,
+    PlanRequest,
+    LoginRequest,
+    ResetRequest,
+    SignupRequest,
+    UserPublic,
+)
+from .store import (get_export, get_plan, get_user_by_email, get_user_by_id,
+                    save_export, save_plan, save_user)
+
+import datetime as _dt
+
+
+def _now() -> str:
+    return _dt.datetime.now(_dt.timezone.utc).isoformat()
+
+
+app = FastAPI(title="Curio API", version="0.1.0")
+
+# CORS is what lets a frontend on another origin (incl. Lovable) call this API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+v1 = FastAPI(title="Curio API v1")
+
+
+@v1.get("/health")
+def health() -> dict:
+    return {"ok": True, "service": "curio-api", "version": "0.1.0"}
+
+
+@v1.get("/meta", response_model=Meta)
+def meta() -> Meta:
+    """Selectable options, served from the backend so the frontend stays dumb."""
+    return Meta(
+        interests=[
+            "animals", "dinosaurs", "space", "nature & plants", "oceans",
+            "transportation", "building & machines", "robots & tech",
+            "science experiments", "how things work", "art & drawing",
+            "music & dance", "stories & books", "numbers & puzzles",
+            "cooking & food", "sports & games", "history & long ago",
+            "people & cultures", "geography & maps", "body & health",
+            "entertainment", "fun", "surprise me",
+        ],
+        subjects=[
+            "Maths", "English / Language", "Science", "Biology", "Chemistry",
+            "Physics", "Geography", "History", "Computing & Tech",
+            "Art & Design", "Music", "Physical Education", "Life Skills",
+            "Second Language",
+        ],
+        outcomes=[
+            "spark curiosity", "school readiness", "reading & writing",
+            "numeracy", "vocabulary", "confidence", "focus & attention",
+            "kindness & empathy", "creativity", "problem-solving", "memory",
+            "social skills", "independence", "public speaking", "growth mindset",
+        ],
+        sports=["soccer", "cricket", "rugby", "swimming", "athletics", "tennis", "basketball"],
+        faiths=["Christianity", "Islam", "Hinduism", "Judaism", "Buddhism", "world religions"],
+        formats=["pdf", "pptx", "docx", "jpeg"],
+        mediums=["illustration", "text", "both"],
+        sizes=["small", "medium", "large"],
+        cadences=["every day", "weekdays", "weekends", "once off", "speech"],
+        scopes=["my country", "my continent", "the whole world"],
+        speech_audiences=["teachers", "kids", "parents", "everyone"],
+        speech_places=["class", "church", "competition", "assembly"],
+    )
+
+
+@v1.post("/plans", response_model=Plan)
+def create_plan(req: PlanRequest, user: dict = Depends(get_current_user)) -> Plan:
+    plan = engine.curate(req)
+    save_plan(plan)
+    return plan
+
+
+@v1.get("/plans/{plan_id}", response_model=Plan)
+def read_plan(plan_id: str, user: dict = Depends(get_current_user)) -> Plan:
+    plan = get_plan(plan_id)
+    if plan is None:
+        raise HTTPException(404, "Plan not found")
+    return plan
+
+
+@v1.post("/plans/{plan_id}/exports", response_model=ExportJob)
+def create_export(
+    plan_id: str,
+    body: ExportRequest,
+    bg: BackgroundTasks,
+    user: dict = Depends(get_current_user),
+) -> ExportJob:
+    plan = get_plan(plan_id)
+    if plan is None:
+        raise HTTPException(404, "Plan not found")
+    job = ExportJob(id=f"exp_{uuid.uuid4().hex[:10]}", plan_id=plan_id, fmt=body.fmt, status="queued")
+    save_export(job)
+    bg.add_task(render.run_export, job.id, plan)
+    return job
+
+
+@v1.get("/exports/{export_id}", response_model=ExportJob)
+def read_export(export_id: str, user: dict = Depends(get_current_user)) -> ExportJob:
+    job = get_export(export_id)
+    if job is None:
+        raise HTTPException(404, "Export not found")
+    return job
+
+
+@v1.get("/exports/{export_id}/download")
+def download_export(export_id: str, user: dict = Depends(get_current_user)):
+    job = get_export(export_id)
+    if job is None or job.status != "done":
+        raise HTTPException(404, "Export not ready")
+    path = render.export_path(job.plan_id, job.fmt)
+    return FileResponse(path, filename=render.download_name(job.plan_id, job.fmt))
+
+
+@v1.get("/plans/{plan_id}/pages/{order}/image")
+def page_image(plan_id: str, order: int, user: dict = Depends(get_current_user)):
+    """Lazy on-screen illustration: generate (or return cached) the picture for
+    one page. 404 when generation is off, so the frontend falls back to emoji."""
+    plan = get_plan(plan_id)
+    if plan is None:
+        raise HTTPException(404, "Plan not found")
+    page = next((p for p in plan.pages if p.order == order), None)
+    if page is None:
+        raise HTTPException(404, "Page not found")
+    _, _, desc = page.anchor_visual.partition("|")
+    path = images.image_for_page(page.topic, desc, age=plan.request.age)
+    if not path:
+        raise HTTPException(404, "No illustration (generation disabled)")
+    return FileResponse(path, media_type="image/png")
+
+
+@v1.post("/ask", response_model=AskReply)
+def ask(req: AskRequest, user: dict = Depends(get_current_user)) -> AskReply:
+    """Homework / chat / voice helper. Calls the assistant when a key is configured;
+    spelling and simple maths are handled locally in the browser at no cost."""
+    return AskReply(reply=assistant.ask(req.message, req.mode))
+
+
+# ----- landing feeds -----
+@v1.get("/feeds")
+def feeds(shuffle: bool = False, user: dict = Depends(get_current_user)) -> dict:
+    """Daily by default (stable, non-repeating); ?shuffle=true gives a fresh
+    random pick, which is what the landing-page Refresh button uses."""
+    return modes.feeds(shuffle)
+
+
+# ----- parent -----
+@v1.get("/parent/overview", response_model=ParentOverview)
+def parent_overview(user: dict = Depends(get_current_user)) -> ParentOverview:
+    return modes.parent_overview()
+
+
+@v1.post("/parent/checkin", response_model=CheckinReply)
+def parent_checkin(req: CheckinRequest, user: dict = Depends(get_current_user)) -> CheckinReply:
+    return CheckinReply(reply=modes.checkin_reply(req.rating))
+
+
+# ----- family -----
+@v1.get("/family/education", response_model=list[EduItem])
+def family_education(user: dict = Depends(get_current_user)) -> list[EduItem]:
+    return modes.family_education()
+
+
+@v1.get("/family/lifestyle", response_model=FamilyLifestyle)
+def family_lifestyle(range: str = "week", user: dict = Depends(get_current_user)) -> FamilyLifestyle:
+    if range not in ("day", "week", "month"):
+        raise HTTPException(400, "range must be day, week or month")
+    return FamilyLifestyle(range=range, blocks=modes.family_lifestyle(range))
+
+
+@v1.get("/family/itinerary/options")
+def itinerary_options(user: dict = Depends(get_current_user)) -> dict:
+    return {"areas": modes.itinerary_areas(), "events": modes.itinerary_events()}
+
+
+@v1.post("/family/itinerary", response_model=Itinerary)
+def family_itinerary(req: ItineraryRequest, user: dict = Depends(get_current_user)) -> Itinerary:
+    if req.when != "events" and req.area not in modes.itinerary_areas():
+        raise HTTPException(400, "unknown area")
+    return modes.itinerary(req)
+
+
+# ----- canvas -----
+@v1.get("/canvas/tools", response_model=CanvasTools)
+def canvas_tools(user: dict = Depends(get_current_user)) -> CanvasTools:
+    return modes.canvas_tools()
+
+
+# ----- the brain -----
+@v1.get("/brain/log", response_model=BrainState)
+def brain_log(user: dict = Depends(get_current_user)) -> BrainState:
+    return BrainState(log=modes.brain_log())
+
+
+@v1.post("/brain/feed", response_model=BrainState)
+def brain_feed(req: BrainFeed, user: dict = Depends(get_current_user)) -> BrainState:
+    return BrainState(log=modes.brain_feed(req.text, req.source_name, req.url, req.kind))
+
+
+# ----- Athena (coach) -----
+@v1.get("/coach/focus-areas", response_model=list[FocusArea])
+def coach_focus_areas(user: dict = Depends(get_current_user)) -> list[FocusArea]:
+    return coach.focus_areas()
+
+
+@v1.post("/coach/plan", response_model=CoachPlan)
+def coach_plan(req: CoachRequest, user: dict = Depends(get_current_user)) -> CoachPlan:
+    return coach.build_plan(req)
+
+
+# ----- Library -----
+@v1.get("/library/facets", response_model=LibraryFacets)
+def library_facets(user: dict = Depends(get_current_user)) -> LibraryFacets:
+    return library.facets()
+
+
+@v1.get("/library/catalog")
+def library_catalog(category: str | None = None, discipline: str | None = None,
+                    subject: str | None = None, genre: str | None = None,
+                    mood: str | None = None, age: int | None = None,
+                    q: str | None = None, limit: int = 60, offset: int = 0,
+                    user: dict = Depends(get_current_user)) -> dict:
+    total, items = library.catalog(category, discipline, subject, genre, mood, age, q, limit, offset)
+    return {"total": total, "items": [b.model_dump() for b in items]}
+
+
+@v1.get("/library/{book_id}", response_model=BookDetail)
+def library_book(book_id: str, user: dict = Depends(get_current_user)) -> BookDetail:
+    d = library.get_book(book_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="book not found")
+    return d
+
+
+@v1.get("/library/{book_id}/download")
+def library_download(book_id: str, fmt: str = "pdf", user: dict = Depends(get_current_user)):
+    d = library.get_book(book_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="book not found")
+    if fmt not in bookexport.MEDIA:
+        raise HTTPException(status_code=400, detail="bad format")
+    meta = bookexport.book_meta(d)
+    data = bookexport.render_doc(meta, fmt)
+    return Response(content=data, media_type=bookexport.MEDIA[fmt],
+                    headers={"Content-Disposition": f'attachment; filename="{bookexport.filename(meta, fmt)}"'})
+
+
+# ----- Workbench (admin-fed Canvas assets) -----
+@v1.get("/workbench/assets")
+def workbench_list(section: str | None = None, user: dict = Depends(get_current_user)) -> dict:
+    return {"assets": uploads.list_assets(section)}
+
+
+@v1.post("/workbench/assets")
+async def workbench_add(file: UploadFile = File(...), name: str = Form(""),
+                        section: str = Form("coloring"), items: str = Form(""),
+                        user: dict = Depends(get_current_user)) -> dict:
+    data = await file.read()
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="image too large (max 8MB)")
+    item_list = [s.strip() for s in items.replace(",", "\n").splitlines() if s.strip()]
+    return uploads.add_asset(name, section, item_list, file.filename or "image.png", data)
+
+
+@v1.get("/workbench/assets/{aid}/image")
+def workbench_image(aid: str):
+    path, _rec = uploads.asset_path(aid)
+    if not path or not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(path)
+
+
+@v1.delete("/workbench/assets/{aid}")
+def workbench_delete(aid: str, user: dict = Depends(get_current_user)) -> dict:
+    return {"deleted": uploads.delete_asset(aid)}
+
+
+# ----- books (Curio Press) -----
+@v1.post("/books", response_model=Book)
+def make_book(req: BookRequest, user: dict = Depends(get_current_user)) -> Book:
+    return modes.make_book(req)
+
+
+@v1.get("/books/{book_id}", response_model=Book)
+def read_book(book_id: str, user: dict = Depends(get_current_user)) -> Book:
+    book = modes.get_book(book_id)
+    if book is None:
+        raise HTTPException(404, "Book not found")
+    return book
+
+
+# ----- auth -----
+@v1.post("/auth/signup", response_model=AuthReply)
+def signup(req: SignupRequest) -> AuthReply:
+    email = req.email.strip().lower()
+    if "@" not in email or len(req.password) < 8:
+        raise HTTPException(400, "Valid email and a password of 8+ characters required")
+    if get_user_by_email(email):
+        raise HTTPException(409, "An account with that email already exists")
+    user = {"id": f"user_{uuid.uuid4().hex[:12]}", "email": email,
+            "password_hash": auth.hash_password(req.password),
+            "created_at": _now()}
+    save_user(user)
+    return AuthReply(token=auth.create_token(user["id"], email),
+                     user=UserPublic(id=user["id"], email=email, created_at=user["created_at"]))
+
+
+@v1.post("/auth/login", response_model=AuthReply)
+def login(req: LoginRequest) -> AuthReply:
+    email = req.email.strip().lower()
+    user = get_user_by_email(email)
+    if not user or not auth.verify_password(req.password, user["password_hash"]):
+        raise HTTPException(401, "Incorrect email or password")
+    return AuthReply(token=auth.create_token(user["id"], email),
+                     user=UserPublic(id=user["id"], email=email, created_at=user["created_at"]))
+
+
+@v1.post("/auth/reset-request")
+def reset_request(req: ResetRequest) -> dict:
+    """Password reset. Always responds the same way (never reveals whether an
+    email exists). Real delivery needs SMTP - wired as the next step; for now
+    this acknowledges the request so the flow exists end to end."""
+    return {"message": "If an account exists for that email, we'll send reset instructions."}
+
+
+@v1.get("/auth/me", response_model=UserPublic)
+def me(claims: dict = Depends(get_current_user)) -> UserPublic:
+    if claims.get("anonymous"):
+        raise HTTPException(401, "Not signed in")
+    user = get_user_by_id(claims.get("sub", ""))
+    if not user:
+        raise HTTPException(404, "User not found")
+    return UserPublic(id=user["id"], email=user["email"], created_at=user["created_at"])
+
+
+app.mount("/v1", v1)
+
+# Serve the built frontend from the SAME process, so the whole product is one
+# server on one address: no separate web server, no CORS, no second domain.
+# (Hash routing means the browser only ever requests "/" + /assets, so static
+# serving with html=True is all that's needed.)
+import os as _os  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_spa_dir = _os.getenv("CURIO_SPA_DIR") or _os.path.join(
+    _os.path.dirname(_os.path.dirname(__file__)), "..", "frontend", "dist"
+)
+if _os.path.isdir(_spa_dir):
+    app.mount("/", StaticFiles(directory=_spa_dir, html=True), name="spa")
+    print(f"[curio] serving SPA from {_spa_dir}")
+else:
+    print(f"[curio] SPA not built yet ({_spa_dir}); API only. Run: npm run build in frontend/")

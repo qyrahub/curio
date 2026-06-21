@@ -1,0 +1,71 @@
+// The seam: the frontend talks to the backend ONLY through here, over HTTP,
+// using VITE_API_URL. No secrets. Token slot ready for when auth is switched on.
+import type {
+  AuthReply, BookDetail, BrainState, CanvasTools, CatalogResp, CoachPlan, CoachRequest, ExportJob, FamilyLifestyle, Feeds, FocusArea, Fmt, Itinerary, LibraryFacets, LibraryFilters,
+  ItineraryRequest, ParentOverview, Plan, PlanRequest, UserPublic,
+} from "../types";
+
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8200/v1";
+
+let authToken: string | null = null;
+export function setAuthToken(t: string | null) { authToken = t; }
+
+async function http<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+  return (await res.json()) as T;
+}
+
+export const api = {
+  signup: (email: string, password: string) => http<AuthReply>("/auth/signup", { method: "POST", body: JSON.stringify({ email, password }) }),
+  login: (email: string, password: string) => http<AuthReply>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  me: () => http<UserPublic>("/auth/me"),
+  workbenchAssets: (section?: string) => http<{ assets: import("../types").WorkbenchAsset[] }>(`/workbench/assets${section ? `?section=${section}` : ""}`),
+  workbenchUpload: async (fd: FormData) => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+    const res = await fetch(`${BASE}/workbench/assets`, { method: "POST", body: fd, headers });
+    if (!res.ok) throw new Error(`upload ${res.status}`);
+    return res.json();
+  },
+  workbenchImageUrl: (id: string) => `${BASE}/workbench/assets/${id}/image`,
+  workbenchDelete: (id: string) => http<{ deleted: boolean }>(`/workbench/assets/${id}`, { method: "DELETE" }),
+  libraryFacets: () => http<LibraryFacets>("/library/facets"),
+  libraryCatalog: (f: LibraryFilters = {}) => {
+    const p = new URLSearchParams();
+    Object.entries(f).forEach(([k, v]) => { if (v !== undefined && v !== "" && v !== null) p.set(k, String(v)); });
+    const qs = p.toString();
+    return http<CatalogResp>(`/library/catalog${qs ? "?" + qs : ""}`);
+  },
+  libraryBook: (id: string) => http<BookDetail>(`/library/${id}`),
+  libraryDownload: async (id: string, fmt: string) => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+    const res = await fetch(`${BASE}/library/${id}/download?fmt=${fmt}`, { headers });
+    if (!res.ok) throw new Error(`download ${res.status}`);
+    return res.blob();
+  },
+  coachFocusAreas: () => http<FocusArea[]>("/coach/focus-areas"),
+  coachPlan: (req: CoachRequest) => http<CoachPlan>("/coach/plan", { method: "POST", body: JSON.stringify(req) }),
+  resetRequest: (email: string) => http<{ message: string }>("/auth/reset-request", { method: "POST", body: JSON.stringify({ email }) }),
+  feeds: (shuffle = false) => http<Feeds>(`/feeds${shuffle ? "?shuffle=true" : ""}`),
+  createPlan: (req: PlanRequest) => http<Plan>("/plans", { method: "POST", body: JSON.stringify(req) }),
+  requestExport: (id: string, fmt: Fmt) => http<ExportJob>(`/plans/${id}/exports`, { method: "POST", body: JSON.stringify({ fmt }) }),
+  getExport: (id: string) => http<ExportJob>(`/exports/${id}`),
+  ask: (message: string, opts?: { plan_id?: string; mode?: string }) => http<{ reply: string }>("/ask", { method: "POST", body: JSON.stringify({ message, plan_id: opts?.plan_id, mode: opts?.mode }) }),
+  parentOverview: () => http<ParentOverview>("/parent/overview"),
+  checkin: (rating: string) => http<{ reply: string }>("/parent/checkin", { method: "POST", body: JSON.stringify({ rating }) }),
+  familyEducation: () => http<EduItemList>("/family/education"),
+  familyLifestyle: (range: string) => http<FamilyLifestyle>(`/family/lifestyle?range=${range}`),
+  itineraryOptions: () => http<{ areas: string[]; events: string[] }>("/family/itinerary/options"),
+  itinerary: (req: ItineraryRequest) => http<Itinerary>("/family/itinerary", { method: "POST", body: JSON.stringify(req) }),
+  canvasTools: () => http<CanvasTools>("/canvas/tools"),
+  brainLog: () => http<BrainState>("/brain/log"),
+  brainFeed: (payload: { text?: string; url?: string; source_name?: string; kind?: string }) => http<BrainState>("/brain/feed", { method: "POST", body: JSON.stringify(payload) }),
+};
+type EduItemList = import("../types").EduItem[];
