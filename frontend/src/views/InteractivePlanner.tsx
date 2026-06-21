@@ -129,6 +129,48 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
   const startDate = new Date(data.startDate + "T00:00:00");
   const dayDate = (i: number) => { const x = new Date(startDate); x.setDate(x.getDate() + i); return x.toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
 
+  const dl = (blob: Blob, name: string) => { const u = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = u; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1500); };
+  const esc = (s: string) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const td = (s: string, bg?: string, bold?: boolean, color?: string) => `<td style="${bg ? `background:${bg};` : ""}${bold ? "font-weight:700;" : ""}${color ? `color:${color};` : ""}padding:4px 8px;border:1px solid #e7e0d2">${esc(s)}</td>`;
+  const blank = `<tr><td colspan="9" style="height:16px;border:none"></td></tr>`;
+
+  const downloadExcel = () => {
+    if (!scope) return;
+    let h = `<table style="border-collapse:collapse;font-family:Arial;font-size:12px">`;
+    h += blank; // blank line before the table
+    h += `<tr><td colspan="9" style="font-size:18px;font-weight:700;color:#2C2A4A;padding:6px">Weekly Planner — ${esc(scope.name)} · ${overall.pct}% complete · ${overall.done}/${overall.tot} tasks done</td></tr>`;
+    h += `<tr><td colspan="9" style="height:8px"></td></tr>`;
+    h += `<tr><td colspan="9" style="background:${accent};color:#fff;font-weight:700;padding:5px 8px">DAILY HABITS</td></tr>`;
+    h += `<tr>${td("Habit", accent + "22", true)}${["M", "T", "W", "T", "F", "S", "S"].map((d) => td(d, accent + "22", true)).join("")}${td("%", accent + "22", true)}</tr>`;
+    data.habits.forEach((hb) => { const done = hb.days.filter(Boolean).length; h += `<tr>${td(hb.name)}${hb.days.map((on) => td(on ? "✓" : "", undefined, false, accent)).join("")}${td(Math.round((done / 7) * 100) + "%")}</tr>`; });
+    h += `<tr><td colspan="9" style="height:10px"></td></tr>`;
+    data.days.forEach((d, i) => {
+      const col = DAYCOL[i]; const st = dayStat(d);
+      h += `<tr><td colspan="9" style="background:${col.acc};color:#fff;font-weight:700;padding:5px 8px">${DAYNAMES[i]} — ${dayDate(i)} · ${st.pct}% · ${esc(d.intent)}</td></tr>`;
+      h += `<tr>${td("Top 3 Priorities", col.light, true)}<td colspan="8" style="border:none"></td></tr>`;
+      d.priorities.forEach((p, j) => { h += `<tr>${td(`${j + 1}. ${p}`)}<td colspan="8" style="border:none"></td></tr>`; });
+      h += `<tr>${td("Tasks", col.light, true)}${td("Done", col.light, true)}<td colspan="7" style="border:none"></td></tr>`;
+      d.tasks.forEach((tk) => { h += `<tr>${td(tk.text)}${td(tk.done ? "✓" : "", undefined, false, col.acc)}<td colspan="7" style="border:none"></td></tr>`; });
+      h += `<tr>${td(`Completed: ${st.done}`, col.light, true)}${td(`Outstanding: ${st.tot - st.done}`, col.light, true)}<td colspan="7" style="border:none"></td></tr>`;
+      h += `<tr>${td("Daily Schedule", col.light, true)}<td colspan="8" style="border:none"></td></tr>`;
+      d.schedule.forEach((s) => { h += `<tr>${td(s.time)}${td(s.text)}${td(s.done ? "✓" : "", undefined, false, col.acc)}<td colspan="6" style="border:none"></td></tr>`; });
+      ([["Notes", "notes"], ["What went well today?", "well"], ["What am I grateful for?", "grateful"]] as const).forEach(([label, key]) => {
+        h += `<tr>${td(label, col.light, true)}<td colspan="8" style="border:none"></td></tr>`;
+        (d[key] as string[]).forEach((line, li) => { h += `<tr>${td(`${li + 1}. ${line}`)}<td colspan="8" style="border:none"></td></tr>`; });
+      });
+      h += `<tr><td colspan="9" style="height:8px"></td></tr>`;
+    });
+    h += `</table>`;
+    dl(new Blob([`<html><head><meta charset="utf-8"></head><body>${h}</body></html>`], { type: "application/vnd.ms-excel" }), `${scope.name.replace(/\s+/g, "_")}_Weekly_Planner.xls`);
+  };
+
+  const downloadPDF = () => {
+    document.body.classList.add("ip-printing");
+    const done = () => { document.body.classList.remove("ip-printing"); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    window.print();
+  };
+
   if (!scope) return <div className={embedded ? "" : "view"}><p className="muted">Add a child profile to start planning.</p></div>;
   const style = { "--ip-accent": accent, "--ip-deep": deep } as CSSProperties;
 
@@ -162,6 +204,11 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
             {pt.name}
           </button>
         ))}
+      </div>
+
+      <div className="ip-toolbar">
+        <button className="ip-dl" onClick={downloadExcel} title="Download as Excel">⤓ Excel</button>
+        <button className="ip-dl" onClick={downloadPDF} title="Download as PDF">⤓ PDF</button>
       </div>
 
       {/* top dashboard */}

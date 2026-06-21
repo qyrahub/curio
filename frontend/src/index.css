@@ -1211,3 +1211,16 @@ main.wrap{padding-bottom:110px}
 .ip-theme.on{border-color:var(--ink);box-shadow:0 6px 16px -10px rgba(44,42,74,.6)}
 .ip-theme-sw{display:inline-flex;border-radius:999px;overflow:hidden;border:1px solid var(--ring)}
 .ip-theme-sw i{width:7px;height:18px;display:block}
+
+/* Interactive Planner · download toolbar + print */
+.ip-toolbar{display:flex;gap:8px;justify-content:flex-end;margin:-4px 0 14px}
+.ip-dl{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ip-accent);background:var(--ip-accent);color:#fff;border-radius:999px;padding:7px 16px;font:inherit;font-weight:800;font-size:.84rem;cursor:pointer}
+.ip-dl:hover{filter:brightness(1.06)}
+@media print{
+  body.ip-printing *{visibility:hidden!important}
+  body.ip-printing .ip,body.ip-printing .ip *{visibility:visible!important}
+  body.ip-printing .ip{position:absolute;left:0;top:0;width:100%;padding:0}
+  body.ip-printing .ip-toolbar,body.ip-printing .ip-switch,body.ip-printing .ip-themes,body.ip-printing .ip-add,body.ip-printing .ip-x{display:none!important}
+  body.ip-printing .ip-cards{grid-template-columns:repeat(7,1fr)!important;overflow:visible!important}
+  @page{size:A3 landscape;margin:8mm}
+}
