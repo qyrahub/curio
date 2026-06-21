@@ -35,6 +35,8 @@ export default function AskCurio({ compact = false }: { compact?: boolean }) {
   const [listening, setListening] = useState(false);
   const lastSpoken = useRef("");
   const recRef = useRef<any>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const grow = () => { const el = taRef.current; if (!el) return; el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 180) + "px"; };
 
   const say = (text: string, spoken?: string, slow = false) => {
     const toSpeak = spoken ?? text;
@@ -45,7 +47,7 @@ export default function AskCurio({ compact = false }: { compact?: boolean }) {
   const submit = async (raw?: string) => {
     const text = (raw ?? input).trim();
     if (!text || busy) return;
-    setInput("");
+    setInput(""); if (taRef.current) taRef.current.style.height = "auto";
     const s = text.toLowerCase();
     // controls that act on the previous answer
     if (/slow(er)?|too fast/.test(s) && lastSpoken.current) { speak(lastSpoken.current, 0.55); return; }
@@ -103,8 +105,9 @@ export default function AskCurio({ compact = false }: { compact?: boolean }) {
       )}
       <div className="ask-row">
         <button className={"ask-mic" + (listening ? " on" : "")} onClick={mic} title="Talk to Curio" aria-label="Talk to Curio">{listening ? "🔴" : "🎤"}</button>
-        <input className="ask-in" value={input} placeholder={listening ? "Listening…" : "Ask me anything…"}
-          onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
+        <textarea ref={taRef} className="ask-in" rows={2} value={input} placeholder={listening ? "Listening…" : "Ask me anything… (Shift+Enter for a new line)"}
+          onChange={(e) => { setInput(e.target.value); grow(); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} />
         <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => submit()}>{busy ? "…" : "Ask"}</button>
       </div>
     </div>
