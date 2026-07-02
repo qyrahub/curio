@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES } from "../lib/profile";
 
@@ -214,7 +215,7 @@ export default function Insights() {
 
       {/* section 1 — how it works */}
       <section className="ins-sec">
-        <div className="ins-sec-head"><span className="ins-num">1</span><h2>How Curio works</h2></div>
+        <div className="ins-sec-head"><span className="ins-num">1</span><h2>How {brand.name} works</h2></div>
         <p className="muted ins-lede">Every module quietly notices what happens — what's played, made, asked, finished, skipped. That flows to the Brain, which refines it into curated learning for the child, advice for you, fresh personalised books, and the next best nudges — then sends it back out. The loop gets sharper every week.</p>
         <Ecosystem />
         <h3 className="ins-sub">The loop that compounds</h3>
@@ -290,7 +291,7 @@ export default function Insights() {
       </section>
 
       <p className="ins-disclaimer muted">
-        Preview figures are synthetic, seeded per child, so you can see the shape of the report. Once activity tracking is live, every number here becomes {focus.name}'s real, measured progress — drawn straight from what happens across Curio, refined by the Brain, and shown to you unfiltered.
+        Preview figures are synthetic, seeded per child, so you can see the shape of the report. Once activity tracking is live, every number here becomes {focus.name}'s real, measured progress — drawn straight from what happens across {brand.name}, refined by the Brain, and shown to you unfiltered.
       </p>
     </div>
   );

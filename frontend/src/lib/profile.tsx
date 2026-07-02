@@ -90,10 +90,10 @@ interface Persist { mode: Mode; activeChildId: string | null; focusChildId: stri
 const KEY = "curio.profiles.v1";
 function seed(): Persist {
   return {
-    mode: "parent", activeChildId: "lerato", focusChildId: "lerato",
+    mode: "parent", activeChildId: "sunshine", focusChildId: "sunshine",
     children: [
-      { id: "lerato", name: "Lerato", age: 6, gender: "girl", theme: "sunrise", interests: ["Animals", "Space", "Counting"] },
-      { id: "thabo", name: "Thabo", age: 9, gender: "boy", theme: "ocean", interests: ["Building", "Comics", "Dinosaurs"] },
+      { id: "sunshine", name: "Sunshine", age: 6, gender: "girl", theme: "sunshine", interests: ["Animals", "Space", "Counting"] },
+      { id: "sage", name: "Sage", age: 9, gender: "boy", theme: "sage", interests: ["Building", "Comics", "Dinosaurs"] },
     ],
   };
 }

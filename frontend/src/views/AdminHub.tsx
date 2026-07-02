@@ -24,7 +24,7 @@ const PLANS: Plan[] = ["Free", "Family", "Premium"];
 const ROLE_COLOR: Record<Role, string> = { admin: "#6366F1", parent: "#5AA7E6", child: "#FF7A66" };
 
 export default function AdminHub() {
-  const { children } = useProfile();
+  const { children, removeChild } = useProfile();
   const PARENT_ID = "acc-parent";
   const [accounts, setAccounts] = useState<Account[]>(() => [
     { id: "acc-admin", name: "You", email: "tech@qyrafund.com", role: "admin", plan: "Premium", parentId: null, themeRight: true },
@@ -37,7 +37,14 @@ export default function AdminHub() {
 
   const setPlan = (id: string, plan: Plan) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
   const toggleTheme = (id: string) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
-  const remove = (id: string) => setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
+  const remove = (id: string) => {
+    const childId = id.startsWith("acc-") ? id.slice(4) : "";
+    if (childId && children.some((c) => c.id === childId)) {
+      if (children.length <= 1) { flash("Keep at least one child profile."); return; }
+      removeChild(childId);
+    }
+    setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
+  };
   const reset = (acc: Account) => flash(`Password reset link sent to ${acc.email}`);
   const addUser = () => {
     if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }

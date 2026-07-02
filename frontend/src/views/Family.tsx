@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
 import type { EduItem, FamilyLifestyle, Itinerary } from "../types";
@@ -134,7 +135,7 @@ function ItineraryTab() {
     <>
       <div className="nudge-banner">
         <span className="nic">🗺️</span>
-        <div><b>Turn a free day into an adventure.</b><p className="muted">Choose where, how far and when — Curio suggests real outings the whole family will enjoy.</p></div>
+        <div><b>Turn a free day into an adventure.</b><p className="muted">Choose where, how far and when — {brand.name} suggests real outings the whole family will enjoy.</p></div>
       </div>
       <div className="grid g3">
         <div className="field"><label className="lbl">Area</label>

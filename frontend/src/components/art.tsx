@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isCurio } from "../lib/brand";
 import { useProfile } from "../lib/profile";
 
 // SVG art ported from curio_preview_v2.html (the look & feel Tom liked).
@@ -6,13 +7,20 @@ import { useProfile } from "../lib/profile";
 // progressively more grown-up scenes, picked from the active/focused child's age.
 
 export function BrandMark() {
-  return (
+  if (isCurio) return (
     <svg className="mark float" viewBox="0 0 64 64" aria-hidden="true">
       <path d="M32 3c2 11 7 16 18 18-11 2-16 7-18 18-2-11-7-16-18-18 11-2 16-7 18-18Z"
         fill="#FFC94D" stroke="#F2563D" strokeWidth="2.5" strokeLinejoin="round" />
       <circle cx="27" cy="30" r="2.4" fill="#2C2A4A" />
       <circle cx="37" cy="30" r="2.4" fill="#2C2A4A" />
       <path d="M27 36c2.5 2.5 7.5 2.5 10 0" stroke="#2C2A4A" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+  return (
+    <svg className="mark float" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 58V31" stroke="#3FA66E" strokeWidth="5" strokeLinecap="round" />
+      <path d="M32 37C32 23 22 17 8 19c0 14 11 20 24 17Z" fill="#5BBF8A" stroke="#3FA66E" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M32 31C32 16 43 10 57 12c0 14-11 20-24 17Z" fill="#2EC4B6" stroke="#19A89C" strokeWidth="2.2" strokeLinejoin="round" />
     </svg>
   );
 }

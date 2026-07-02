@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { brand } from "./lib/brand";
 import { useHashRoute } from "./lib/useHashRoute";
 import { loadAuth } from "./lib/auth";
 import { BrandMark } from "./components/art";
@@ -110,8 +111,8 @@ function Shell() {
           <button className="brand" onClick={() => nav("home")}>
             <BrandMark />
             <div style={{ textAlign: "left" }}>
-              <div className="brand-name">Curi<span>o</span></div>
-              <div className="tagline">a spark of curiosity</div>
+              <div className="brand-name">{brand.name.slice(0, -1)}<span>{brand.name.slice(-1)}</span></div>
+              <div className="tagline">{brand.tagline}</div>
             </div>
           </button>
           <div className="tabs">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import AskCurio from "../components/AskCurio";
 import { AgePills, Seg } from "../components/ui";
@@ -54,7 +55,7 @@ export default function Athena() {
       {tab === "spelling" && (
         <div className="panel">
           <div className="eyebrow">🔤 Spelling & voice helper</div>
-          <p className="muted" style={{ marginBottom: 4 }}>Tap the mic and say “spell elephant”, or ask a question — Curio types it out <em>and</em> reads it aloud. Say “slower” to hear a word spelled slowly.</p>
+          <p className="muted" style={{ marginBottom: 4 }}>Tap the mic and say “spell elephant”, or ask a question — {brand.name} types it out <em>and</em> reads it aloud. Say “slower” to hear a word spelled slowly.</p>
           <AskCurio />
         </div>
       )}
@@ -148,7 +149,7 @@ function Homework() {
   return (
     <div className="panel">
       <div className="eyebrow">📚 Homework help</div>
-      <p className="muted" style={{ marginBottom: 8 }}>Paste the homework, questions or instructions (or upload a text file). Curio answers each point, keeping the same format.</p>
+      <p className="muted" style={{ marginBottom: 8 }}>Paste the homework, questions or instructions (or upload a text file). {brand.name} answers each point, keeping the same format.</p>
       <div className="file-row">
         <label className="btn btn-ghost btn-sm file-pick">📎 Upload .txt
           <input type="file" accept=".txt,.md,text/plain" style={{ display: "none" }} onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
@@ -165,7 +166,7 @@ function Homework() {
           <pre className="hw-pre">{ans}</pre>
         </div>
       )}
-      <p className="hint">Answers come from the Curio assistant — a grown-up should always check important work.</p>
+      <p className="hint">Answers come from the {brand.name} assistant — a grown-up should always check important work.</p>
     </div>
   );
 }

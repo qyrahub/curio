@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { brand } from "../lib/brand";
 import { api } from "../lib/api";
 import { clearAuth, getUser, saveAuth } from "../lib/auth";
 import { SectionArt } from "../components/art";
@@ -66,7 +67,7 @@ export default function Account({ onChange }: { onChange: (u: UserPublic | null)
       <Sparkles />
       <div className="auth-card">
         <div style={{ maxWidth: 190, margin: "0 auto -6px" }}><SectionArt kind="account" /></div>
-        <div className="eyebrow">Curio</div>
+        <div className="eyebrow">{brand.name}</div>
         <h2>{mode === "reset" ? "Reset your password" : mode === "signup" ? "Create your account" : "Welcome back"}</h2>
         <p className="sub">
           {mode === "reset" ? "We'll send reset instructions to your email."

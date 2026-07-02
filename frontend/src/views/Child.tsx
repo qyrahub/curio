@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import AskCurio from "../components/AskCurio";
 import Flipbook from "../components/Flipbook";
@@ -75,7 +76,7 @@ export default function Child() {
 
   return (
     <div className="view">
-      <PageHero kind="child" eyebrow="Build a plan" title={<>Today's <em>learning adventure</em></>} tease="Set the age, add a spark of what they love, and Curio builds a bright, balanced plan." />
+      <PageHero kind="child" eyebrow="Build a plan" title={<>Today's <em>learning adventure</em></>} tease={`Set the age, add a spark of what they love, and ${brand.name} builds a bright, balanced plan.`} />
       <AskCurio />
       <div className="builder">
         <div className="builder-inner">

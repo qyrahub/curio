@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
 import { speak, stopSpeaking, speechSupported } from "../lib/speech";
@@ -27,7 +28,7 @@ export default function Library() {
 
   return (
     <div className="view">
-      <PageHero kind="account" eyebrow="Library" title={<>The Curio <em>Library</em></>}
+      <PageHero kind="account" eyebrow="Library" title={<>The {brand.name} <em>Library</em></>}
         tease={`${facets.total}+ books across every subject and discipline — browse by category, filter, then read aloud or download.`} />
 
       {!browsing && (

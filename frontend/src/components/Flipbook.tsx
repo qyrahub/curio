@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brand } from "../lib/brand";
 import type { Plan } from "../types";
 import { speak, stopSpeaking, speechSupported } from "../lib/speech";
 
@@ -24,7 +25,7 @@ export default function Flipbook({ plan, apiBase }: { plan: Plan; apiBase: strin
           {isCover && (
             <div className="flip-cover-in">
               <div className="flip-spark">★</div>
-              <h2>Curio</h2>
+              <h2>{brand.name}</h2>
               <p className="flip-sub">A learning adventure for age {plan.request.age}</p>
               <p className="flip-hint">Tap the arrows to flip through together →</p>
             </div>

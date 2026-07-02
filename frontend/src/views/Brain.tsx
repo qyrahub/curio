@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
 import type { BrainItem } from "../types";
@@ -36,7 +37,7 @@ export default function Brain() {
 
   return (
     <div className="view">
-      <PageHero kind="brain" eyebrow="The Brain" title={<>What Curio is <em>learning</em></>} tease="Feed it ideas, links, files, audio or video — everything flows back into better plans for every family." />
+      <PageHero kind="brain" eyebrow="The Brain" title={<>What {brand.name} is <em>learning</em></>} tease="Feed it ideas, links, files, audio or video — everything flows back into better plans for every family." />
       <div className="panel brainwrap">
         <div className="eyebrow"><span className="pulse-dot" /> Feed The Brain</div>
         <div className="seg" style={{ marginTop: 8 }}>

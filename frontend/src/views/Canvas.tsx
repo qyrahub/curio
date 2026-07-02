@@ -248,7 +248,7 @@ function StoryBuilder() {
   return (
     <div>
       <label className="lbl">Who is the hero?</label>
-      <input className="custom-in" value={hero} onChange={(e) => setHero(e.target.value)} placeholder="e.g. Lerato the lion cub" />
+      <input className="custom-in" value={hero} onChange={(e) => setHero(e.target.value)} placeholder="e.g. Sage the lion cub" />
       <label className="lbl">What is the problem?</label>
       <input className="custom-in" value={problem} onChange={(e) => setProblem(e.target.value)} placeholder="e.g. the river dried up" />
       <label className="lbl">A happy twist?</label>

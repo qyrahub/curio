@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { brand } from "../lib/brand";
 import { api } from "../lib/api";
 import { speak, stopSpeaking, speechSupported } from "../lib/speech";
 
@@ -87,7 +88,7 @@ export default function AskCurio({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={"askcurio" + (compact ? " compact" : "")}>
-      <div className="ask-head"><span className="ask-bot">🤖</span><b>Ask Curio</b><span className="muted">talk or type — try “spell whale”, then “slower”</span></div>
+      <div className="ask-head"><span className="ask-bot">🤖</span><b>Ask {brand.name}</b><span className="muted">talk or type — try “spell whale”, then “slower”</span></div>
       {turns.length > 0 && (
         <div className="ask-log">
           {turns.slice(-6).map((t, i) => (
@@ -104,7 +105,7 @@ export default function AskCurio({ compact = false }: { compact?: boolean }) {
         </div>
       )}
       <div className="ask-row">
-        <button className={"ask-mic" + (listening ? " on" : "")} onClick={mic} title="Talk to Curio" aria-label="Talk to Curio">{listening ? "🔴" : "🎤"}</button>
+        <button className={"ask-mic" + (listening ? " on" : "")} onClick={mic} title={`Talk to ${brand.name}`} aria-label={`Talk to ${brand.name}`}>{listening ? "🔴" : "🎤"}</button>
         <textarea ref={taRef} className="ask-in" rows={2} value={input} placeholder={listening ? "Listening…" : "Ask me anything… (Shift+Enter for a new line)"}
           onChange={(e) => { setInput(e.target.value); grow(); }}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} />

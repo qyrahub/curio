@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brand } from "../lib/brand";
 import AskCurio from "../components/AskCurio";
 import { api } from "../lib/api";
 import { ButterflyLifecycle } from "../components/art";
@@ -14,7 +15,7 @@ export default function Home({ nav }: { nav: (r: string) => void }) {
     ["parent", "👪", "For you, the parent", "A gentle snapshot, daily nudges and tips that actually help."],
     ["family", "🏡", "For the family", "Learning, lifestyle and outings to do together."],
     ["canvas", "🎨", "Canvas", "Make projects, books and playful things together."],
-    ["brain", "🧠", "The Brain", "What Curio is learning to make every plan better."],
+    ["brain", "🧠", "The Brain", `What ${brand.name} is learning to make every plan better.`],
   ];
   const cards: [string, string | undefined][] = [
     ["🌍 Around the world", feeds?.world], ["📈 Parenting trend", feeds?.trend],
@@ -26,7 +27,7 @@ export default function Home({ nav }: { nav: (r: string) => void }) {
       <section className="hero">
         <div>
           <h1>Make today's <em>learning adventure</em> for your child.</h1>
-          <p>Tell us how old they are — that's all we need. Press one button and Curio builds a bright, balanced plan to explore together.</p>
+          <p>Tell us how old they are — that's all we need. Press one button and {brand.name} builds a bright, balanced plan to explore together.</p>
           <div className="cta-wrap">
             <button className="cta" onClick={() => nav("child")}>✨ Build a plan</button>
             <span className="cta-note">Only the age is required.</span>

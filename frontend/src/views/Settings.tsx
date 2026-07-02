@@ -37,7 +37,7 @@ function load(): SetState {
 function firstName(u: UserPublic) { const b = u.email.split("@")[0]; const f = b.split(/[._\s]+/)[0] || b; return f.charAt(0).toUpperCase() + f.slice(1); }
 
 export default function Settings({ user, onSignOut }: { user?: UserPublic | null; onSignOut?: () => void }) {
-  const { mode, children, activeChild, updateChild, switchToChild, parentDisplay, setParentDisplay, parentTheme, setParentTheme } = useProfile();
+  const { mode, children, activeChild, updateChild, removeChild, switchToChild, parentDisplay, setParentDisplay, parentTheme, setParentTheme } = useProfile();
   const role = mode;
   const isAdmin = !!user && ADMIN_EMAILS.includes(user.email.toLowerCase());
   const [st, setSt] = useState<SetState>(load);
@@ -57,7 +57,14 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
   const [nu, setNu] = useState({ name: "", email: "", role: "child" as Role });
   const setPlan = (id: string, plan: Plan) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
   const toggleThemeRight = (id: string) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
-  const removeAcct = (id: string) => setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
+  const removeAcct = (id: string) => {
+    const childId = id.startsWith("acc-") ? id.slice(4) : "";
+    if (childId && children.some((c) => c.id === childId)) {
+      if (children.length <= 1) { flash("Keep at least one child profile."); return; }
+      removeChild(childId);
+    }
+    setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
+  };
   const addAcct = () => {
     if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }
     setAccounts((a) => [...a, { id: "acc-" + uid(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: nu.role === "child" ? meId : null, themeRight: true }]);
