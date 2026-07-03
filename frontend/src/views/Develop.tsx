@@ -4,6 +4,10 @@ import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/pro
 import { type GanttItem } from "../lib/devstore";
 import GanttChart from "../components/GanttChart";
 import PlanTracker, { type ChildCtx } from "../components/PlanTracker";
+import GrowthSpine from "../components/GrowthSpine";
+import NeedsPanel from "../components/NeedsPanel";
+import EvaluatePanel from "../components/EvaluatePanel";
+import ReviewPanel from "../components/ReviewPanel";
 
 /* Curio · Develop — the parent-mode cockpit. Profiles, themes and the focused
    child all come from the shared profile context (single source of truth), so
@@ -157,7 +161,7 @@ function loadDetails(): Record<string, Details> {
 
 export default function Develop() {
   const { children, focusChild, setFocusChild, addChild, updateChild, removeChild } = useProfile();
-  const [tab, setTab] = useState<"insights" | "plan" | "settings">("insights");
+  const [tab, setTab] = useState<"insights" | "needs" | "plan" | "evaluate" | "review" | "settings">("insights");
   const [added, setAdded] = useState<string[]>([]);
   const [chat, setChat] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -221,13 +225,14 @@ export default function Develop() {
       </div>
 
       <div className="dv-tabs">
-        {([["insights", "Insights"], ["plan", "Plan & tracker"], ["settings", "Settings"]] as const).map(([k, l]) => (
+        {([["insights", "Overview"], ["needs", "Needs"], ["plan", "Plan & tracker"], ["evaluate", "Evaluate"], ["review", "Review"], ["settings", "Settings"]] as const).map(([k, l]) => (
           <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
 
       {tab === "insights" && (
         <div>
+          <GrowthSpine childId={focus.id} gantt={gantt} accent={t.accent} />
           <div className="dv-childhead">
             <div className="dv-big">{t.emoji}</div>
             <div>
@@ -340,6 +345,15 @@ export default function Develop() {
         </div>
       )}
 
+      {tab === "needs" && (
+        <div className="dv-card"><NeedsPanel childId={focus.id} childName={focus.name} accent={t.accent} /></div>
+      )}
+      {tab === "evaluate" && (
+        <div className="dv-card"><EvaluatePanel childId={focus.id} childName={focus.name} childAge={focus.age} accent={t.accent} onAddGantt={(items) => setGantt([...gantt, ...items])} /></div>
+      )}
+      {tab === "review" && (
+        <div className="dv-card"><ReviewPanel childId={focus.id} childName={focus.name} childAge={focus.age} accent={t.accent} gantt={gantt} onAddGantt={(items) => setGantt([...gantt, ...items])} /></div>
+      )}
       {tab === "settings" && (
         <div className="dv-grid dv-g2">
           <div className="dv-card">

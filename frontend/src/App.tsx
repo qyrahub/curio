@@ -11,6 +11,7 @@ import Parent from "./views/Parent";
 import Family from "./views/Family";
 import Athena from "./views/Athena";
 import Develop from "./views/Develop";
+import Feedback from "./views/Feedback";
 import Insights from "./views/Insights";
 import AdminIntelligence from "./views/AdminIntelligence";
 import Settings from "./views/Settings";
@@ -26,12 +27,12 @@ const CHILD_LINKS: [string, string][] = [
   ["home", "Home"], ["child", "Child"], ["coach", "Coach"], ["canvas", "Canvas"], ["planner", "Planner"], ["library", "Library"],
 ];
 const PARENT_LINKS: [string, string][] = [
-  ["home", "Home"], ["child", "Child"], ["parent", "Parent"], ["family", "Family"], ["coach", "Coach"], ["develop", "Develop"], ["insights", "Insights"], ["brain", "Brain"], ["library", "Library"], ["workbench", "Workbench"],
+  ["home", "Home"], ["child", "Child"], ["parent", "Parent"], ["family", "Family"], ["coach", "Coach"], ["develop", "Develop"], ["insights", "Insights"], ["brain", "Brain"], ["library", "Library"], ["workbench", "Workbench"], ["feedback", "Feedback"],
 ];
 const ADMIN_LINKS: [string, string][] = [
   ["home", "Home"], ["intelligence", "Intelligence"], ["insights", "Insights"], ["brain", "Brain"],
 ];
-const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "account", "settings"];
+const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "account", "settings"];
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 function firstName(user: UserPublic) {
@@ -131,6 +132,7 @@ function Shell() {
         {r === "planner" && <FamilyPlanner />}
         {r === "coach" && <Athena />}
         {r === "develop" && <Develop />}
+        {r === "feedback" && <Feedback user={user} />}
         {r === "insights" && <Insights />}
         {r === "intelligence" && <AdminIntelligence />}
         {r === "settings" && <Settings user={user} onSignOut={signOut} />}

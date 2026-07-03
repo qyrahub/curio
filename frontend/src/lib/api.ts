@@ -67,5 +67,17 @@ export const api = {
   canvasTools: () => http<CanvasTools>("/canvas/tools"),
   brainLog: () => http<BrainState>("/brain/log"),
   brainFeed: (payload: { text?: string; url?: string; source_name?: string; kind?: string }) => http<BrainState>("/brain/feed", { method: "POST", body: JSON.stringify(payload) }),
+  growthList: (kind: string, childId?: string) => http<Record<string, unknown>[]>(`/growth/${kind}${childId ? `?child_id=${encodeURIComponent(childId)}` : ""}`),
+  growthPut: (kind: string, item: Record<string, unknown>) => http<Record<string, unknown>>(`/growth/${kind}`, { method: "POST", body: JSON.stringify(item) }),
+  growthDelete: (kind: string, id: string) => http<{ deleted: number }>(`/growth/${kind}/${id}`, { method: "DELETE" }),
+  feedbackSubmit: (body: Record<string, unknown>) => http<{ ok: boolean; id: string }>("/feedback", { method: "POST", body: JSON.stringify(body) }),
+  feedbackMine: () => http<Record<string, unknown>[]>("/feedback/mine"),
+  adminFeedback: () => http<Record<string, unknown>[]>("/admin/feedback"),
+  adminFeedbackUpdate: (id: string, body: Record<string, unknown>) => http<Record<string, unknown>>(`/admin/feedback/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  adminRelease: () => http<Record<string, unknown>[]>("/admin/release"),
+  adminReleasePut: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/release", { method: "POST", body: JSON.stringify(body) }),
+  adminReleaseDelete: (id: string) => http<{ deleted: number }>(`/admin/release/${id}`, { method: "DELETE" }),
+  adminDataStats: () => http<Record<string, number>>("/admin/data/stats"),
+  adminDataPurge: (body: Record<string, unknown>) => http<{ collection: string; purged: number }>("/admin/data/purge", { method: "POST", body: JSON.stringify(body) }),
 };
 type EduItemList = import("../types").EduItem[];

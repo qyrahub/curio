@@ -49,6 +49,11 @@ class Settings:
     store_backend = os.getenv("CURIO_STORE", "memory")  # memory | mongo
     mongo_uri = os.getenv("CURIO_MONGO_URI", "mongodb://localhost:27017")
     mongo_db = os.getenv("CURIO_MONGO_DB", "curio")
+    admin_emails = [
+        e.strip().lower()
+        for e in os.getenv("CURIO_ADMIN_EMAILS", "thomas.marokane@gmail.com,tech@qyrafund.com").split(",")
+        if e.strip()
+    ]
 
 
 settings = Settings()
