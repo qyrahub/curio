@@ -24,32 +24,46 @@ const PLANS: Plan[] = ["Free", "Family", "Premium"];
 const ROLE_COLOR: Record<Role, string> = { admin: "#6366F1", parent: "#5AA7E6", child: "#FF7A66" };
 
 export default function AdminHub() {
-  const { children, removeChild } = useProfile();
+  const { children, addChild, updateChild, removeChild } = useProfile();
   const PARENT_ID = "acc-parent";
-  const [accounts, setAccounts] = useState<Account[]>(() => [
-    { id: "acc-admin", name: "You", email: "tech@qyrafund.com", role: "admin", plan: "Premium", parentId: null, themeRight: true },
-    { id: PARENT_ID, name: "Parent", email: "parent@family.co", role: "parent", plan: "Family", parentId: null, themeRight: true },
-    ...children.map((c) => ({ id: "acc-" + c.id, name: c.name, email: `${c.name.toLowerCase()}@family.co`, role: "child" as Role, plan: "Family" as Plan, parentId: PARENT_ID, themeRight: true })),
-  ]);
+  const adminAcc: Account = { id: "acc-admin", name: "You", email: "tech@qyrafund.com", role: "admin", plan: "Premium", parentId: null, themeRight: true };
+  const parentAcc: Account = { id: PARENT_ID, name: "Parent", email: "parent@family.co", role: "parent", plan: "Family", parentId: null, themeRight: true };
+  const [ovr, setOvr] = useState<Record<string, { plan?: Plan; themeRight?: boolean }>>({});
+  const [extra, setExtra] = useState<Account[]>([]);
+  const childAccts: Account[] = children.map((c) => ({
+    id: "acc-" + c.id, name: c.name, email: `${c.name.toLowerCase()}@family.co`,
+    role: "child", plan: ovr[c.id]?.plan || "Family", parentId: PARENT_ID, themeRight: ovr[c.id]?.themeRight ?? true,
+  }));
+  const accounts: Account[] = [adminAcc, parentAcc, ...childAccts, ...extra];
   const [toast, setToast] = useState<string | null>(null);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2200); };
   const [nu, setNu] = useState({ name: "", email: "", role: "child" as Role });
+  const childIdOf = (id: string) => (id.startsWith("acc-") ? id.slice(4) : "");
 
-  const setPlan = (id: string, plan: Plan) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
-  const toggleTheme = (id: string) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
+  const setPlan = (id: string, plan: Plan) => {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) setOvr((o) => ({ ...o, [cid]: { ...o[cid], plan } }));
+    else setExtra((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
+  };
+  const toggleTheme = (id: string) => {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) setOvr((o) => ({ ...o, [cid]: { ...o[cid], themeRight: !(o[cid]?.themeRight ?? true) } }));
+    else setExtra((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
+  };
   const remove = (id: string) => {
-    const childId = id.startsWith("acc-") ? id.slice(4) : "";
-    if (childId && children.some((c) => c.id === childId)) {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) {
       if (children.length <= 1) { flash("Keep at least one child profile."); return; }
-      removeChild(childId);
+      removeChild(cid);
+    } else {
+      setExtra((a) => a.filter((x) => x.id !== id && x.parentId !== id));
     }
-    setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
   };
   const reset = (acc: Account) => flash(`Password reset link sent to ${acc.email}`);
   const addUser = () => {
     if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }
-    const id = "acc-" + Date.now();
-    setAccounts((a) => [...a, { id, name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: nu.role === "child" ? PARENT_ID : null, themeRight: true }]);
+    if (nu.role === "child") { const nc = addChild(); updateChild({ ...nc, name: nu.name.trim() }); }
+    else setExtra((a) => [...a, { id: "acc-" + Date.now(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: null, themeRight: true }]);
     setNu({ name: "", email: "", role: "child" });
     flash("Account created.");
   };

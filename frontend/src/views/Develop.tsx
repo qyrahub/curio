@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
+import { type GanttItem } from "../lib/devstore";
+import GanttChart from "../components/GanttChart";
+import PlanTracker, { type ChildCtx } from "../components/PlanTracker";
 
 /* Curio · Develop — the parent-mode cockpit. Profiles, themes and the focused
    child all come from the shared profile context (single source of truth), so
@@ -11,7 +14,7 @@ type Discipline = "Literacy" | "Numeracy" | "Science" | "Creativity" | "Social-e
 type Source = "Child" | "Parent" | "Coach" | "Brain" | "Canvas";
 interface PlanItem { id: string; day: string; discipline: Discipline; title: string; why: string; source: Source; done: boolean; open: boolean; }
 interface Nudge { id: string; discipline: Discipline; source: Source; title: string; why: string; value: string; }
-interface Details { likes: string[]; dislikes: string[]; strengths: string[]; struggles: string[]; gaps: string[]; most: string[]; least: string[]; plan: PlanItem[]; }
+interface Details { likes: string[]; dislikes: string[]; strengths: string[]; struggles: string[]; gaps: string[]; most: string[]; least: string[]; plan: PlanItem[]; gantt: GanttItem[]; }
 type WorkChild = ChildProfile & Details;
 
 const DISC_COLORS: Record<Discipline, string> = {
@@ -31,7 +34,7 @@ const SEED: Record<string, Details> = {
     strengths: ["Number sense", "Curiosity — asks lots of questions", "Pattern spotting"],
     struggles: ["Staying with a longer story", "Forming letters neatly"],
     gaps: ["Reading stamina", "Tricky letter sounds (sh, th)"],
-    most: ["Bubble pop", "Counting", "Colouring book"], least: ["Story maker", "Word scramble"], plan: [],
+    most: ["Bubble pop", "Counting", "Colouring book"], least: ["Story maker", "Word scramble"], plan: [], gantt: [],
   },
   thabo: {
     likes: ["Comic builder", "Tetris", "Search & find"],
@@ -39,7 +42,7 @@ const SEED: Record<string, Details> = {
     strengths: ["Creativity & storytelling", "Spatial / building", "Persistence on puzzles"],
     struggles: ["Spelling longer words", "Reading fluency aloud"],
     gaps: ["Times-tables recall (6–9)", "Editing his own writing"],
-    most: ["Comic builder", "Tetris", "Search & find"], least: ["Spelling", "Reading aloud"], plan: [],
+    most: ["Comic builder", "Tetris", "Search & find"], least: ["Spelling", "Reading aloud"], plan: [], gantt: [],
   },
 };
 function defaultDetails(p: ChildProfile): Details {
@@ -50,7 +53,7 @@ function defaultDetails(p: ChildProfile): Details {
     strengths: ["Curiosity"],
     struggles: ["Staying focused on longer tasks"],
     gaps: ["Building a daily learning habit"],
-    most: ["—"], least: ["—"], plan: [],
+    most: ["—"], least: ["—"], plan: [], gantt: [],
   };
 }
 
@@ -168,6 +171,9 @@ export default function Develop() {
   const t = THEMES[focus.theme];
   const themeStyle = { "--dv-accent": t.accent, "--dv-deep": t.deep, "--dv-t1": t.t1, "--dv-t2": t.t2 } as CSSProperties;
   const setDetails = (next: Details) => setDetailsAll({ ...detailsAll, [focus.id]: next });
+  const gantt = d.gantt || [];
+  const setGantt = (items: GanttItem[]) => setDetails({ ...d, gantt: items });
+  const childCtx: ChildCtx = { id: focus.id, name: focus.name, age: focus.age, gender: focus.gender, interests: focus.interests, strengths: d.strengths, struggles: d.struggles, gaps: d.gaps, likes: d.likes, dislikes: d.dislikes };
 
   const nudges = useMemo(() => nudgesFor(c), [c.id, c.name, c.age, c.interests.join(","), c.gaps.join(","), c.strengths.join(",")]);
   const lessons = useMemo(() => lessonsFor(c), [c.id, c.name, c.interests.join(","), c.gaps.join(","), c.strengths.join(",")]);
@@ -268,6 +274,16 @@ export default function Develop() {
       {tab === "plan" && (
         <div>
           <div className="dv-card">
+            <PlanTracker child={childCtx} accent={t.accent} onAdd={(items) => setGantt([...gantt, ...items])} />
+          </div>
+          <div className="dv-card" style={{ marginTop: 14 }}>
+            <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", marginBottom: 8 }}>
+              <h3 style={{ margin: 0 }}>{focus.name}'s Gantt</h3>
+              <span className="muted">Recommendations land here — also shows under Family, beside the planners.</span>
+            </div>
+            <GanttChart items={gantt} onChange={setGantt} accent={t.accent} />
+          </div>
+          <div className="dv-card" style={{ marginTop: 14 }}>
             <div className="dv-planbar">
               <div className="dv-chatrow">
                 <input value={chat} onChange={(e) => setChat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onChat()}

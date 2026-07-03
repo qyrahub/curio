@@ -37,7 +37,7 @@ function load(): SetState {
 function firstName(u: UserPublic) { const b = u.email.split("@")[0]; const f = b.split(/[._\s]+/)[0] || b; return f.charAt(0).toUpperCase() + f.slice(1); }
 
 export default function Settings({ user, onSignOut }: { user?: UserPublic | null; onSignOut?: () => void }) {
-  const { mode, children, activeChild, updateChild, removeChild, switchToChild, parentDisplay, setParentDisplay, parentTheme, setParentTheme } = useProfile();
+  const { mode, children, activeChild, addChild, updateChild, removeChild, switchToChild, parentDisplay, setParentDisplay, parentTheme, setParentTheme } = useProfile();
   const role = mode;
   const isAdmin = !!user && ADMIN_EMAILS.includes(user.email.toLowerCase());
   const [st, setSt] = useState<SetState>(load);
@@ -47,27 +47,43 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
 
   // merged accounts (was the admin "Accounts, access & plans" Hub)
   const meId = "acc-me";
-  const [accounts, setAccounts] = useState<Account[]>(() => {
-    const me: Account = {
-      id: meId, name: user ? firstName(user) : "You", email: user?.email || "you@curio.app",
-      role: isAdmin ? "admin" : "parent", plan: "Premium", parentId: null, themeRight: true,
-    };
-    return [me, ...children.map((c) => ({ id: "acc-" + c.id, name: c.name, email: `${c.name.toLowerCase()}@family.co`, role: "child" as Role, plan: "Family" as Plan, parentId: meId, themeRight: true }))];
-  });
+  const me: Account = {
+    id: meId, name: user ? firstName(user) : "You", email: user?.email || "you@curio.app",
+    role: isAdmin ? "admin" : "parent", plan: "Premium", parentId: null, themeRight: true,
+  };
+  // Child rows derive LIVE from the real profile store so the list never drifts.
+  const [ovr, setOvr] = useState<Record<string, { plan?: Plan; themeRight?: boolean }>>({});
+  const [extra, setExtra] = useState<Account[]>([]);
+  const childAccts: Account[] = children.map((c) => ({
+    id: "acc-" + c.id, name: c.name, email: `${c.name.toLowerCase()}@family.co`,
+    role: "child", plan: ovr[c.id]?.plan || "Family", parentId: meId, themeRight: ovr[c.id]?.themeRight ?? true,
+  }));
+  const accounts: Account[] = [me, ...childAccts, ...extra];
   const [nu, setNu] = useState({ name: "", email: "", role: "child" as Role });
-  const setPlan = (id: string, plan: Plan) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
-  const toggleThemeRight = (id: string) => setAccounts((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
+  const childIdOf = (id: string) => (id.startsWith("acc-") ? id.slice(4) : "");
+  const setPlan = (id: string, plan: Plan) => {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) setOvr((o) => ({ ...o, [cid]: { ...o[cid], plan } }));
+    else setExtra((a) => a.map((x) => (x.id === id ? { ...x, plan } : x)));
+  };
+  const toggleThemeRight = (id: string) => {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) setOvr((o) => ({ ...o, [cid]: { ...o[cid], themeRight: !(o[cid]?.themeRight ?? true) } }));
+    else setExtra((a) => a.map((x) => (x.id === id ? { ...x, themeRight: !x.themeRight } : x)));
+  };
   const removeAcct = (id: string) => {
-    const childId = id.startsWith("acc-") ? id.slice(4) : "";
-    if (childId && children.some((c) => c.id === childId)) {
+    const cid = childIdOf(id);
+    if (children.some((c) => c.id === cid)) {
       if (children.length <= 1) { flash("Keep at least one child profile."); return; }
-      removeChild(childId);
+      removeChild(cid);
+    } else {
+      setExtra((a) => a.filter((x) => x.id !== id && x.parentId !== id));
     }
-    setAccounts((a) => a.filter((x) => x.id !== id && x.parentId !== id));
   };
   const addAcct = () => {
     if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }
-    setAccounts((a) => [...a, { id: "acc-" + uid(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: nu.role === "child" ? meId : null, themeRight: true }]);
+    if (nu.role === "child") { const nc = addChild(); updateChild({ ...nc, name: nu.name.trim() }); }
+    else setExtra((a) => [...a, { id: "acc-" + uid(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: null, themeRight: true }]);
     setNu({ name: "", email: "", role: "child" }); flash("Account created.");
   };
 

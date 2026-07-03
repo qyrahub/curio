@@ -5,6 +5,9 @@ import { api } from "../lib/api";
 import type { EduItem, FamilyLifestyle, Itinerary } from "../types";
 import FamilyPlanner from "./FamilyPlanner";
 import InteractivePlanner from "./InteractivePlanner";
+import GanttChart from "../components/GanttChart";
+import { useProfile, THEMES } from "../lib/profile";
+import { useGantt } from "../lib/devstore";
 
 const OUTING_ICONS: [RegExp, string][] = [
   [/zoo|animal|bird|lemur|wildlife|safari/i, "\u{1F981}"],
@@ -32,8 +35,8 @@ function outingIcon(o: { title: string; desc: string }): string {
 }
 const goChild = () => { window.location.hash = "#/child"; };
 
-type Tab = "education" | "lifestyle" | "itinerary" | "planner" | "interactive";
-const TAB_LABEL: Record<Tab, string> = { education: "Education", lifestyle: "Lifestyle", itinerary: "Itinerary", planner: "Calendar", interactive: "Interactive Planner" };
+type Tab = "education" | "lifestyle" | "itinerary" | "planner" | "interactive" | "gantt";
+const TAB_LABEL: Record<Tab, string> = { education: "Education", lifestyle: "Lifestyle", itinerary: "Itinerary", planner: "Calendar", interactive: "Interactive Planner", gantt: "Gantt" };
 
 export default function Family() {
   const [tab, setTab] = useState<Tab>("education");
@@ -41,7 +44,7 @@ export default function Family() {
     <div className="view">
       <PageHero kind="family" eyebrow="Together" title={<>Things to <em>learn & do</em> as a family</>} tease="Education ideas, a lifestyle rhythm, real outings near you, and a whole-year planner — for the family." />
       <div className="tabs">
-        {(["education", "lifestyle", "itinerary", "planner", "interactive"] as const).map((t) => (
+        {(["education", "lifestyle", "itinerary", "planner", "interactive", "gantt"] as const).map((t) => (
           <button key={t} className={tab === t ? "on" : ""} aria-pressed={tab === t} onClick={() => setTab(t)}>{TAB_LABEL[t]}</button>
         ))}
       </div>
@@ -50,6 +53,7 @@ export default function Family() {
       {tab === "itinerary" && <ItineraryTab />}
       {tab === "planner" && <FamilyPlanner embedded />}
       {tab === "interactive" && <InteractivePlanner embedded />}
+      {tab === "gantt" && <FamilyGantt />}
     </div>
   );
 }
@@ -191,6 +195,29 @@ function ItineraryTab() {
           <button className="btn btn-ghost" onClick={goChild}>✨ Build a learning plan around the trip</button>
         </div>
       )}
+    </>
+  );
+}
+
+function FamilyGantt() {
+  const { children, focusChild } = useProfile();
+  const [cid, setCid] = useState(focusChild?.id || children[0]?.id || "");
+  const child = children.find((c) => c.id === cid) || children[0];
+  const [items, setItems] = useGantt(child?.id || "");
+  if (!child) return <p className="muted">Add a child profile to use the Gantt.</p>;
+  const th = THEMES[child.theme];
+  return (
+    <>
+      <div className="nudge-banner">
+        <span className="nic">📊</span>
+        <div><b>{child.name}'s Gantt</b><p className="muted">Plans built under Develop → Plan &amp; Tracker land here. Update progress and status as you go.</p></div>
+      </div>
+      <div className="seg wrap" style={{ marginBottom: 14 }}>
+        {children.map((k) => (
+          <button key={k.id} className={k.id === cid ? "on" : ""} onClick={() => setCid(k.id)}>{THEMES[k.theme].emoji} {k.name}</button>
+        ))}
+      </div>
+      <GanttChart items={items} onChange={setItems} accent={th.accent} />
     </>
   );
 }
