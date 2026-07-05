@@ -92,6 +92,11 @@ function AccountMenu({ user, nav }: { user: UserPublic | null; nav: (r: string) 
 
 function Shell() {
   const [route, nav] = useHashRoute();
+  const gnav = (rt: string) => {
+    const dirty = (window as unknown as { __curioFlowDirty?: boolean }).__curioFlowDirty;
+    if (dirty && !window.confirm("You haven't submitted your plan for this child yet. Leave this page anyway?")) return;
+    nav(rt);
+  };
   const [user, setUser] = useState<UserPublic | null>(() => loadAuth());
   const { mode } = useProfile();
   const signOut = () => {
@@ -109,7 +114,7 @@ function Shell() {
     <>
       <nav className="nav">
         <div className="nav-in">
-          <button className="brand" onClick={() => nav("home")}>
+          <button className="brand" onClick={() => gnav("home")}>
             <BrandMark />
             <div style={{ textAlign: "left" }}>
               <div className="brand-name">{brand.name.slice(0, -1)}<span>{brand.name.slice(-1)}</span></div>
@@ -118,7 +123,7 @@ function Shell() {
           </button>
           <div className="tabs">
             {links.map(([rt, label]) => (
-              <button key={rt} className={r === rt ? "on" : ""} onClick={() => nav(rt)}>{label}</button>
+              <button key={rt} className={r === rt ? "on" : ""} onClick={() => gnav(rt)}>{label}</button>
             ))}
             <AccountMenu user={user} nav={nav} />
           </div>

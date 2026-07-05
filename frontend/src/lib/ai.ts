@@ -12,3 +12,8 @@ export async function askJSON<T>(prompt: string): Promise<T | null> {
   try { const r = await api.ask(prompt, { mode: "develop" }); return grabJSON<T>(r.reply); }
   catch { return null; }
 }
+
+export async function askVisionJSON<T>(prompt: string, image: string, mediaType: string): Promise<T | null> {
+  try { const r = await api.askVision(prompt, image, mediaType, "develop"); return grabJSON<T>(r.reply); }
+  catch { return null; }
+}

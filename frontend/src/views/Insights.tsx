@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES } from "../lib/profile";
+import EvolutionChart from "../components/EvolutionChart";
 
 /* Curio · Insights — the honest value view for parents.
    1) An animated illustration of how every module feeds the Brain and how the
@@ -213,6 +214,20 @@ export default function Insights() {
       <PageHero kind="parent" eyebrow="Insights" title={<>Proof, not <em>promises</em></>}
         tease="How the whole ecosystem works, the value it's creating for your child and you, and how they're really doing — measured honestly, no marketing." />
 
+      {/* section 0 — growth over time */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">★</span><h2>{focus.name}'s growth over time</h2></div>
+        <div className="ins-chips" style={{ marginBottom: 14 }}>
+          {children.map((k) => (
+            <button key={k.id} className={"ins-chip" + (k.id === focus.id ? " on" : "")} onClick={() => setFocusChild(k.id)}>
+              <span className="ins-av" style={{ background: `linear-gradient(140deg,${THEMES[k.theme].accent},${THEMES[k.theme].deep})` }}>{THEMES[k.theme].emoji}</span>
+              {k.name}
+            </button>
+          ))}
+        </div>
+        <EvolutionChart childId={focus.id} childName={focus.name} accent={t.accent} />
+      </section>
+
       {/* section 1 — how it works */}
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">1</span><h2>How {brand.name} works</h2></div>
@@ -226,6 +241,7 @@ export default function Insights() {
       {/* section 2 — value created */}
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">2</span><h2>Value created</h2></div>
+        <div className="ins-preview">Preview view — these charts fill in with real activity as {focus.name} uses Curio. Live growth data is in <b>“How {focus.name} has grown”</b> above.</div>
         <div className="ins-controls">
           <div className="ins-chips">
             {children.map((k) => (
@@ -267,6 +283,7 @@ export default function Insights() {
       {/* section 3 — intelligence / benchmark */}
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">3</span><h2>Intelligence — how {focus.name} stacks up</h2></div>
+        <div className="ins-preview">Preview view — benchmarks populate once there’s enough real activity.</div>
         <p className="muted ins-lede">Against age-typical development and the best-practice target. The point isn't to rank a child — it's to show, factually, where they're ahead, on track, or worth a gentle push.</p>
         <div className="ins-bench">
           {bench.map((b) => (
