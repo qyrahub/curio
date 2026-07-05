@@ -3,6 +3,8 @@ import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES } from "../lib/profile";
 import EvolutionChart from "../components/EvolutionChart";
+import IssuesTimeline from "../components/IssuesTimeline";
+import IntelligencePanel from "../components/IntelligencePanel";
 
 /* Curio · Insights — the honest value view for parents.
    1) An animated illustration of how every module feeds the Brain and how the
@@ -226,6 +228,18 @@ export default function Insights() {
           ))}
         </div>
         <EvolutionChart childId={focus.id} childName={focus.name} accent={t.accent} />
+      </section>
+
+      {/* section 0b — issues over time */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">◷</span><h2>Issues over time</h2></div>
+        <IssuesTimeline childId={focus.id} childName={focus.name} accent={t.accent} />
+      </section>
+
+      {/* section 0c — intelligence: ranked issues vs what works */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">✦</span><h2>Intelligence — {focus.name}'s bigger picture</h2></div>
+        <IntelligencePanel childId={focus.id} childName={focus.name} />
       </section>
 
       {/* section 1 — how it works */}

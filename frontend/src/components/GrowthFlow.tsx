@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { askJSON, askVisionJSON } from "../lib/ai";
 import { api } from "../lib/api";
 import { growth, feedBrain, NEED_STATUS, type GrowthNeed, type ReviewCycle } from "../lib/growth";
 import { useGantt, newGanttItem } from "../lib/devstore";
 import GanttChart from "./GanttChart";
+import ReviewExport from "./ReviewExport";
+import { ISSUE_TAGS, STRENGTH_TAGS } from "../lib/tags";
 
 /* Curio · Develop — the guided growth loop. One persistent flow per child:
    Overview → Needs → Review → Plan → Submit → Recap. Inputs persist across
@@ -24,7 +26,7 @@ const AREAS = ["Focus & attention", "Reading", "Writing", "Maths", "Behaviour & 
 const NUDGES = ["Happens at homework time", "Worse when tired", "School has flagged it", "Affects the whole family", "Better with 1:1 support", "Getting worse recently", "Only in certain subjects", "Started this term"];
 
 interface Item { point: string; implication: string; }
-interface Result { summary: string; working: Item[]; watch: Item[]; recommendations: { task: string; focus: string; durationDays: number }[]; }
+interface Result { summary: string; working: Item[]; watch: Item[]; recommendations: { task: string; focus: string; durationDays: number }[]; issues: string[]; strengths: string[]; }
 const DISC = "This is practical guidance to support your parenting — not a diagnosis or medical advice.";
 
 function pImg(p: string) { return "The parent has ATTACHED A PHOTO you can see (typed/printed text = the teacher's instructions/task; handwriting = the child's own answers). Read it first; do not ask about anything already visible in it. " + p; }
@@ -49,11 +51,14 @@ function fallback(area: string, c: FlowCtx): Result {
       { task: "One instruction at a time; ask them to repeat it", focus: "Working memory", durationDays: 14 },
       { task: "Immediate specific praise for starting", focus: "Motivation", durationDays: 21 },
     ],
+    issues: ["Focus & attention", "Following instructions"],
+    strengths: ["Effort"],
   };
 }
 
 export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx; accent: string; onGoInsights: () => void }) {
   const [step, setStep] = useState<Step>("overview");
+  const reviewRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useGantt(ctx.id);
 
   // needs input (persists across steps)
@@ -139,7 +144,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
       catch { setErr("Couldn't fetch that URL — check it and try again."); setBusy(false); return; }
     }
     const src = isPhoto ? "The parent has attached a PHOTO of the child's school work. IMPORTANT: typed/printed text in the image is the TEACHER's instructions/task; handwritten text is the CHILD's own answers. Read BOTH carefully, judge how well the child actually followed each instruction - cite specifics of what they did well and exactly where they went wrong - and base the working/watch/recommendations on that concrete evidence, not generalities." : "";
-    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\nProduce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations.`;
+    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\nProduce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}], "issues": [string], "strengths": [string]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations. For "issues" pick 1-5 tags that genuinely apply from EXACTLY this list: ${ISSUE_TAGS.join(", ")}. For "strengths" pick 1-4 from EXACTLY this list: ${STRENGTH_TAGS.join(", ")}. Use ONLY verbatim tags from these two lists.`;
     const j = isPhoto ? await askVisionJSON<Result>(p, imgData, imgType) : await askJSON<Result>(p);
     setBusy(false);
     const r = j && Array.isArray(j.recommendations) && j.recommendations.length ? j : fallback(areaValue, ctx);
@@ -179,7 +184,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
         child_id: ctx.id, period: new Date().toISOString().slice(0, 10),
         summary: review?.summary || text.slice(0, 200),
         achieved: doneItems.map((g) => g.task), not_achieved: items.filter((g) => !doneItems.includes(g)).map((g) => g.task),
-        improvements: [], next: (review?.recommendations || []).map((r) => r.task), scores,
+        improvements: [], next: (review?.recommendations || []).map((r) => r.task), scores, issues: review?.issues || [], strengths: review?.strengths || [],
       } as Parameters<typeof growth.putReview>[0]);
       feedBrain(`New development need submitted for ${ctx.name} (${areaValue}): ${text}. ${review?.summary || ""}`, "Growth · submission");
       setSubmitted(true); setStep("recap");
@@ -320,6 +325,8 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
       {step === "review" && review && (
         <div className="gf-card">
           <div className="gf-ey">Review · what we found</div>
+          <ReviewExport data={{ childName: ctx.name, summary: review.summary, working: review.working, watch: review.watch, recommendations: review.recommendations, issues: review.issues, strengths: review.strengths }} targetRef={reviewRef} />
+          <div ref={reviewRef} className="gf-review-capture">
           <div className="gf-summary">{review.summary}</div>
           <div className="pt-board">
             <div className="pt-col pt-good"><h4>✅ Working / strengths</h4><ul>{review.working.map((it, i) => <li key={i}><b>{it.point}.</b> {it.implication}</li>)}</ul></div>
@@ -335,6 +342,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
             ))}
           </div>
           <div className="gf-pro">👩‍⚕️ {DISC}</div>
+          </div>
           <div className="gf-brow" style={{ marginTop: 14 }}>
             <button className="gf-go" disabled={chosen.size === 0} onClick={addChosen}>Add {chosen.size} to plan →</button>
             <button className="gf-ghost" onClick={() => setStep("needs")}>Back</button>
