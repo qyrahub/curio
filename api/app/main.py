@@ -52,7 +52,8 @@ from .models import (
     UserPublic,
 )
 from .store import (get_export, get_plan, get_user_by_email, get_user_by_id,
-                    save_export, save_plan, save_user)
+                    save_export, save_plan, save_user,
+                    coll_put, coll_get, coll_list, coll_delete, coll_purge)
 
 import datetime as _dt
 
@@ -388,9 +389,152 @@ def me(claims: dict = Depends(get_current_user)) -> UserPublic:
 
 
 
+GROWTH_KINDS = {"needs": "growth_needs", "reviews": "growth_reviews", "evaluations": "growth_evaluations"}
+
+
+def _uid(user: dict) -> str:
+    # Real user id when signed in; a shared "anonymous" bucket otherwise.
+    # Never blocks — auth-on still isolates real families by their token sub.
+    return user.get("sub") or "anonymous"
+
+
+def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    if (user.get("email") or "").lower() not in settings.admin_emails:
+        raise HTTPException(403, "Admins only")
+    return user
+
+
+@v1.get("/growth/{kind}")
+def growth_list(kind: str, child_id: str | None = None, user: dict = Depends(get_current_user)) -> list[dict]:
+    coll = GROWTH_KINDS.get(kind)
+    if not coll:
+        raise HTTPException(404, "unknown growth kind")
+    flt = {"user_id": _uid(user)}
+    if child_id:
+        flt["child_id"] = child_id
+    return coll_list(coll, flt)
+
+
+@v1.post("/growth/{kind}")
+def growth_put(kind: str, body: dict, user: dict = Depends(get_current_user)) -> dict:
+    coll = GROWTH_KINDS.get(kind)
+    if not coll:
+        raise HTTPException(404, "unknown growth kind")
+    uid = _uid(user)
+    doc = dict(body or {})
+    if not doc.get("child_id"):
+        raise HTTPException(400, "child_id is required")
+    doc["user_id"] = uid
+    doc.setdefault("id", f"g_{uuid.uuid4().hex[:12]}")
+    doc.setdefault("created_at", _now())
+    doc["updated_at"] = _now()
+    coll_put(coll, doc)
+    return doc
+
+
+@v1.delete("/growth/{kind}/{item_id}")
+def growth_delete(kind: str, item_id: str, user: dict = Depends(get_current_user)) -> dict:
+    coll = GROWTH_KINDS.get(kind)
+    if not coll:
+        raise HTTPException(404, "unknown growth kind")
+    return {"deleted": coll_delete(coll, {"user_id": _uid(user), "id": item_id})}
+
+
+@v1.post("/feedback")
+def feedback_submit(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    uid = _uid(user)
+    b = body or {}
+    kind = b.get("kind")
+    if kind not in ("feedback", "feature"):
+        raise HTTPException(400, "kind must be 'feedback' or 'feature'")
+    msg = (b.get("message") or "").strip()
+    if len(msg) < 2:
+        raise HTTPException(400, "message is required")
+    doc = {
+        "id": f"fb_{uuid.uuid4().hex[:12]}", "user_id": uid,
+        "email": (b.get("email") or user.get("email") or "").lower(),
+        "kind": kind, "message": msg[:4000],
+        "status": "new" if kind == "feature" else "received",
+        "admin_note": "", "notified": False, "created_at": _now(), "updated_at": _now(),
+    }
+    coll_put("feedback", doc)
+    if kind == "feedback":
+        try:
+            modes.brain_feed(msg, "Parent feedback", None, "feedback")
+        except Exception:
+            pass
+    return {"ok": True, "id": doc["id"]}
+
+
+@v1.get("/feedback/mine")
+def feedback_mine(user: dict = Depends(get_current_user)) -> list[dict]:
+    return coll_list("feedback", {"user_id": _uid(user), "kind": "feature"})
+
+
+@v1.get("/admin/feedback")
+def admin_feedback(user: dict = Depends(require_admin)) -> list[dict]:
+    return coll_list("feedback", {})
+
+
+@v1.patch("/admin/feedback/{fid}")
+def admin_feedback_update(fid: str, body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = coll_get("feedback", {"id": fid})
+    if not doc:
+        raise HTTPException(404, "not found")
+    for k in ("status", "admin_note", "notified"):
+        if k in (body or {}):
+            doc[k] = body[k]
+    doc["updated_at"] = _now()
+    coll_put("feedback", doc)
+    return doc
+
+
+@v1.get("/admin/release")
+def admin_release(user: dict = Depends(require_admin)) -> list[dict]:
+    return coll_list("release_items", {})
+
+
+@v1.post("/admin/release")
+def admin_release_put(body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = dict(body or {})
+    doc.setdefault("id", f"rel_{uuid.uuid4().hex[:12]}")
+    doc.setdefault("created_at", _now())
+    doc["updated_at"] = _now()
+    coll_put("release_items", doc)
+    return doc
+
+
+@v1.delete("/admin/release/{rid}")
+def admin_release_delete(rid: str, user: dict = Depends(require_admin)) -> dict:
+    return {"deleted": coll_delete("release_items", {"id": rid})}
+
+
+_PURGEABLE = set(GROWTH_KINDS.values()) | {"feedback", "release_items"}
+
+
+@v1.get("/admin/data/stats")
+def admin_data_stats(user: dict = Depends(require_admin)) -> dict:
+    return {c: len(coll_list(c, {})) for c in sorted(_PURGEABLE)}
+
+
+@v1.post("/admin/data/purge")
+def admin_data_purge(body: dict, user: dict = Depends(require_admin)) -> dict:
+    b = body or {}
+    coll = b.get("collection")
+    if coll not in _PURGEABLE:
+        raise HTTPException(400, "unknown collection")
+    flt: dict = {}
+    if b.get("status"):
+        flt["status"] = b["status"]
+    before = None
+    days = b.get("older_than_days")
+    if days:
+        before = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=int(days))).isoformat()
+    return {"collection": coll, "purged": coll_purge(coll, flt, before)}
+
+
 @v1.post("/ask-vision")
 def ask_vision_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
-    _uid(user)
     img = (body or {}).get("image") or ""
     media = (body or {}).get("media_type") or "image/jpeg"
     if img.startswith("data:") and "," in img:
@@ -405,7 +549,6 @@ def ask_vision_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
 
 @v1.post("/fetch-url")
 def fetch_url_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
-    _uid(user)
     url = ((body or {}).get("url") or "").strip()
     if not re.match(r"^https?://", url):
         raise HTTPException(400, "a valid http(s) URL is required")

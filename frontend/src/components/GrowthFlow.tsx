@@ -27,6 +27,7 @@ interface Item { point: string; implication: string; }
 interface Result { summary: string; working: Item[]; watch: Item[]; recommendations: { task: string; focus: string; durationDays: number }[]; }
 const DISC = "This is practical guidance to support your parenting — not a diagnosis or medical advice.";
 
+function pImg(p: string) { return "The parent has ATTACHED A PHOTO you can see (typed/printed text = the teacher's instructions/task; handwriting = the child's own answers). Read it first; do not ask about anything already visible in it. " + p; }
 function ctxLine(c: FlowCtx) {
   return `Child: ${c.name}, age ${c.age}, ${c.gender}. Interests: ${c.interests.join(", ") || "—"}. Strengths: ${c.strengths.join(", ") || "—"}. Struggles: ${c.struggles.join(", ") || "—"}. Known gaps: ${c.gaps.join(", ") || "—"}.`;
 }
@@ -70,7 +71,23 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
   const [imgData, setImgData] = useState("");
   const [imgType, setImgType] = useState("image/jpeg");
   const [imgName, setImgName] = useState("");
-  const onFile = (f: File) => { const r = new FileReader(); r.onload = () => { const du = String(r.result); setImgData(du.split(",")[1] || ""); setImgType(f.type || "image/jpeg"); setImgName(f.name); }; r.readAsDataURL(f); };
+  const onFile = (f: File) => {
+    setImgName(f.name); setErr("");
+    const img = new Image();
+    const url = URL.createObjectURL(f);
+    img.onload = () => {
+      const maxDim = 1568;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
+      const cx = canvas.getContext("2d"); if (cx) cx.drawImage(img, 0, 0, w, h);
+      const durl = canvas.toDataURL("image/jpeg", 0.85);
+      URL.revokeObjectURL(url);
+      setImgData(durl.split(",")[1] || ""); setImgType("image/jpeg");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); setErr("Couldn't read that image - try another photo."); };
+    img.src = url;
+  };
 
   const [review, setReview] = useState<Result | null>(null);
   const [chosen, setChosen] = useState<Set<number>>(new Set());
@@ -107,7 +124,8 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
   async function nextClarify(history: { q: string; a: string }[]) {
     setBusy(true);
     const p = `You are helping a parent. ${ctxLine(ctx)}\nParent's need (area: ${areaValue}): "${text}". Context flags: ${picked.join(", ") || "none"}.\nAlready answered: ${history.map((h) => `Q:${h.q} A:${h.a}`).join(" | ") || "none"}.\nAsk the single most useful next question to make the plan specific. If you have enough, set enough=true, question="". Return ONLY JSON: {"question": string, "enough": boolean}`;
-    const j = await askJSON<{ question: string; enough: boolean }>(p);
+    const isPhoto = inputMode === "photo" && !!imgData;
+    const j = isPhoto ? await askVisionJSON<{ question: string; enough: boolean }>(pImg(p), imgData, imgType) : await askJSON<{ question: string; enough: boolean }>(p);
     setBusy(false);
     if (!j || j.enough || !j.question.trim() || history.length >= 4) { analyze(history); return; }
     setPendingQ(j.question.trim()); setAnswer(""); setPhase("clarify");
@@ -120,7 +138,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
       try { const r = await api.fetchUrl(url.trim()); material = `${text}\n\nContent fetched from ${url}:\n${r.text}`.trim(); }
       catch { setErr("Couldn't fetch that URL — check it and try again."); setBusy(false); return; }
     }
-    const src = isPhoto ? "The parent has attached a PHOTO of the child's school work or situation — read it carefully and base your analysis on what it shows." : "";
+    const src = isPhoto ? "The parent has attached a PHOTO of the child's school work. IMPORTANT: typed/printed text in the image is the TEACHER's instructions/task; handwritten text is the CHILD's own answers. Read BOTH carefully, judge how well the child actually followed each instruction - cite specifics of what they did well and exactly where they went wrong - and base the working/watch/recommendations on that concrete evidence, not generalities." : "";
     const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\nProduce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations.`;
     const j = isPhoto ? await askVisionJSON<Result>(p, imgData, imgType) : await askJSON<Result>(p);
     setBusy(false);
