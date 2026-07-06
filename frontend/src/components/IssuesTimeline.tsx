@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { growth, type ReviewCycle } from "../lib/growth";
+import { normTag } from "../lib/themes";
 
 /* Issues over time — for each canonical issue tag, when it appeared across
    submitted reviews, and whether it recurs. Surfaces patterns, not just scores. */
@@ -14,7 +15,7 @@ export default function IssuesTimeline({ childId, childName, accent }: { childId
   const model = useMemo(() => {
     const snaps = reviews.filter((r) => Array.isArray(r.issues) && r.issues!.length).sort((a, b) => dateOf(a) - dateOf(b));
     const tags = new Map<string, number[]>();
-    snaps.forEach((r) => (r.issues || []).forEach((t) => { if (!tags.has(t)) tags.set(t, []); tags.get(t)!.push(dateOf(r)); }));
+    snaps.forEach((r) => (r.issues || []).map(normTag).filter(Boolean).forEach((t) => { if (!tags.has(t)) tags.set(t, []); tags.get(t)!.push(dateOf(r)); }));
     const times = snaps.map(dateOf);
     const min = Math.min(...times), max = Math.max(...times, Date.now());
     const rows = Array.from(tags.entries()).map(([tag, ds]) => ({ tag, ds, n: ds.length })).sort((a, b) => b.n - a.n);

@@ -15,6 +15,7 @@ export interface GrowthNeed { id: string; child_id: string; title: string; area:
 export interface ReviewCycle { id: string; child_id: string; period: string; summary: string; achieved: string[]; not_achieved: string[]; improvements: string[]; next: string[]; scores?: Record<string, number>; issues?: string[]; strengths?: string[]; created_at?: string; }
 export interface Evaluation { id: string; child_id: string; title: string; source_text: string; summary: string; working: string[]; watch: string[]; recommendations: { task: string; focus: string; durationDays: number }[]; created_at?: string; }
 export interface FeedbackItem { id: string; user_id?: string; email?: string; kind: "feedback" | "feature"; message: string; status: string; admin_note?: string; notified?: boolean; created_at?: string; }
+export interface Benchmark { id: string; scope: "world" | "country"; country?: string; age_group: string; theme: string; value: number; status: string; source?: string; }
 export interface ReleaseItem { id: string; title: string; source_id?: string; status: string; start?: string; end?: string; progress?: number; created_at?: string; }
 
 const asNeed = (d: Record<string, unknown>) => d as unknown as GrowthNeed;
@@ -42,6 +43,14 @@ export const growth = {
   adminDelRelease: (id: string) => api.adminReleaseDelete(id),
   adminStats: () => api.adminDataStats(),
   adminPurge: (collection: string, opts: { older_than_days?: number; status?: string }) => api.adminDataPurge({ collection, ...opts }),
+  benchmarks: (scope?: string, country?: string, ageGroup?: string) => api.benchmarks(scope, country, ageGroup).then((r) => r as unknown as Benchmark[]),
+  adminBenchmarks: () => api.adminBenchmarks().then((r) => r as unknown as Benchmark[]),
+  adminBenchPut: (b: Partial<Benchmark>) => api.adminBenchPut(b as Record<string, unknown>).then((r) => r as unknown as Benchmark),
+  adminBenchPatch: (id: string, b: Partial<Benchmark>) => api.adminBenchPatch(id, b as Record<string, unknown>).then((r) => r as unknown as Benchmark),
+  adminBenchDel: (id: string) => api.adminBenchDel(id),
+  adminBenchSuggest: (b: { scope: string; country?: string; age_group: string; themes: string[] }) => api.adminBenchSuggest(b as Record<string, unknown>).then((r) => r as unknown as Benchmark[]),
+  adminBenchConfigGet: () => api.adminBenchConfigGet().then((r) => r as unknown as { frequency: string }),
+  adminBenchConfigSet: (frequency: string) => api.adminBenchConfigSet({ frequency }).then((r) => r as unknown as { frequency: string }),
 };
 
 export function feedBrain(text: string, source = "Growth", kind = "growth") {

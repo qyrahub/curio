@@ -5,6 +5,8 @@ import { useProfile, THEMES } from "../lib/profile";
 import EvolutionChart from "../components/EvolutionChart";
 import IssuesTimeline from "../components/IssuesTimeline";
 import IntelligencePanel from "../components/IntelligencePanel";
+import BenchmarkRadars from "../components/BenchmarkRadars";
+import ValueTiles from "../components/ValueTiles";
 
 /* Curio · Insights — the honest value view for parents.
    1) An animated illustration of how every module feeds the Brain and how the
@@ -242,6 +244,12 @@ export default function Insights() {
         <IntelligencePanel childId={focus.id} childName={focus.name} />
       </section>
 
+      {/* section 0d — benchmarking radars */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">◎</span><h2>Benchmarking — {focus.name} vs world, country &amp; own past</h2></div>
+        <BenchmarkRadars childId={focus.id} childName={focus.name} childAge={focus.age} country={focus.country} />
+      </section>
+
       {/* section 1 — how it works */}
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">1</span><h2>How {brand.name} works</h2></div>
@@ -255,7 +263,9 @@ export default function Insights() {
       {/* section 2 — value created */}
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">2</span><h2>Value created</h2></div>
-        <div className="ins-preview">Preview view — these charts fill in with real activity as {focus.name} uses Curio. Live growth data is in <b>“How {focus.name} has grown”</b> above.</div>
+        <p className="muted" style={{ marginTop: 0 }}>Live tiles — one per strength theme for {focus.name}, growing automatically as new themes emerge.</p>
+        <ValueTiles childId={focus.id} childName={focus.name} accent={t.accent} />
+        <div className="ins-preview" style={{ marginTop: 18 }}>The trend charts below are an illustrative preview of the fuller value model — the live data is the tiles above and the growth chart at the top.</div>
         <div className="ins-controls">
           <div className="ins-chips">
             {children.map((k) => (

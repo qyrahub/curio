@@ -81,5 +81,13 @@ export const api = {
   adminReleaseDelete: (id: string) => http<{ deleted: number }>(`/admin/release/${id}`, { method: "DELETE" }),
   adminDataStats: () => http<Record<string, number>>("/admin/data/stats"),
   adminDataPurge: (body: Record<string, unknown>) => http<{ collection: string; purged: number }>("/admin/data/purge", { method: "POST", body: JSON.stringify(body) }),
+  benchmarks: (scope?: string, country?: string, ageGroup?: string) => http<Record<string, unknown>[]>(`/benchmarks?${new URLSearchParams({ ...(scope ? { scope } : {}), ...(country ? { country } : {}), ...(ageGroup ? { age_group: ageGroup } : {}) }).toString()}`),
+  adminBenchmarks: () => http<Record<string, unknown>[]>("/admin/benchmarks"),
+  adminBenchPut: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/benchmarks", { method: "POST", body: JSON.stringify(body) }),
+  adminBenchPatch: (id: string, body: Record<string, unknown>) => http<Record<string, unknown>>(`/admin/benchmarks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  adminBenchDel: (id: string) => http<{ deleted: number }>(`/admin/benchmarks/${id}`, { method: "DELETE" }),
+  adminBenchSuggest: (body: Record<string, unknown>) => http<Record<string, unknown>[]>("/admin/benchmarks/suggest", { method: "POST", body: JSON.stringify(body) }),
+  adminBenchConfigGet: () => http<Record<string, unknown>>("/admin/benchmarks/config"),
+  adminBenchConfigSet: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/benchmarks/config", { method: "POST", body: JSON.stringify(body) }),
 };
 type EduItemList = import("../types").EduItem[];

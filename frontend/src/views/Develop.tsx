@@ -93,6 +93,12 @@ export default function Develop() {
                 <option value="girl">girl</option><option value="boy">boy</option><option value="other">prefer not to say</option>
               </select>
             </div>
+            <div className="dv-field"><label>Country (for national benchmarking in Insights)</label>
+              <select value={focus.country || ""} onChange={(e) => updateChild({ ...focus, country: e.target.value })}>
+                <option value="">Not set</option>
+                {["South Africa", "United Kingdom", "United States", "Nigeria", "Kenya", "Australia", "Canada", "India", "Other"].map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
             <div className="dv-field"><label>Interests (drive the outputs)</label>
               <div className="dv-intchips">
                 {["Animals", "Space", "Counting", "Building", "Comics", "Dinosaurs", "Music", "Nature", "Cars", "Cooking", "Sport", "Drawing", "Robots", "Dancing", "Painting", "Trains", "Sea life", "Bugs", "Baking", "Puzzles", "Superheroes", "Princesses", "Football", "Gardening", "Magic", "Stars", "Reading", "Dragons", "Cats & dogs", "Numbers"].map((x) => {

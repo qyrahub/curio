@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { UserPublic } from "../types";
 import PageHero from "../components/PageHero";
-import { growth, type FeedbackItem, type ReleaseItem } from "../lib/growth";
+import { growth, type FeedbackItem, type ReleaseItem, type Benchmark } from "../lib/growth";
+import { ISSUE_TAGS, STRENGTH_TAGS } from "../lib/tags";
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 const FEATURE_STATUS = ["new", "incorporate", "scheduled", "dismissed", "shipped"];
@@ -66,18 +67,19 @@ function UserForm({ user }: { user: UserPublic | null }) {
 }
 
 function AdminPanel() {
-  const [tab, setTab] = useState<"queue" | "release" | "data">("queue");
+  const [tab, setTab] = useState<"queue" | "release" | "data" | "benchmarks">("queue");
   return (
     <div style={{ marginTop: 26 }}>
       <h2 style={{ marginBottom: 10 }}>Admin</h2>
       <div className="tabs">
-        {(["queue", "release", "data"] as const).map((t) => (
-          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : "Data controls"}</button>
+        {(["queue", "release", "data", "benchmarks"] as const).map((t) => (
+          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : t === "data" ? "Data controls" : "Benchmarks"}</button>
         ))}
       </div>
       {tab === "queue" && <Queue />}
       {tab === "release" && <Release />}
       {tab === "data" && <DataControls />}
+      {tab === "benchmarks" && <Benchmarks />}
     </div>
   );
 }
@@ -157,6 +159,81 @@ function DataControls() {
         <button className="pt-go" style={{ background: "#FF7A66" }} onClick={purge}>Purge</button>
       </div>
       {msg && <div className="fb-ok">{msg}</div>}
+    </div>
+  );
+}
+
+const AGE_GROUPS = ["3-5", "6-8", "9-11", "12-14"];
+const COUNTRIES = ["South Africa", "United Kingdom", "United States", "Nigeria", "Kenya", "Australia", "Canada", "India"];
+const FREQS = ["off", "weekly", "monthly", "quarterly"];
+
+function Benchmarks() {
+  const [items, setItems] = useState<Benchmark[]>([]);
+  const [freq, setFreq] = useState("monthly");
+  const [scope, setScope] = useState<"world" | "country">("world");
+  const [country, setCountry] = useState("South Africa");
+  const [age, setAge] = useState("6-8");
+  const [theme, setTheme] = useState("");
+  const [value, setValue] = useState("60");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const load = () => { growth.adminBenchmarks().then(setItems).catch(() => {}); growth.adminBenchConfigGet().then((c) => setFreq(c.frequency)).catch(() => {}); };
+  useEffect(load, []);
+
+  const addOne = async () => {
+    if (!theme.trim()) return;
+    await growth.adminBenchPut({ scope, country: scope === "country" ? country : "", age_group: age, theme: theme.trim(), value: Number(value) || 50, status: "approved" });
+    setTheme(""); load();
+  };
+  const suggest = async () => {
+    setBusy(true); setMsg("");
+    try { await growth.adminBenchSuggest({ scope, country: scope === "country" ? country : "", age_group: age, themes: [...ISSUE_TAGS, ...STRENGTH_TAGS] }); setMsg("AI suggestions added below — review and approve."); load(); }
+    catch { setMsg("Suggest failed — check the model is configured."); }
+    setBusy(false);
+  };
+  const patch = async (b: Benchmark, p: Partial<Benchmark>) => { const u = await growth.adminBenchPatch(b.id, p); setItems((x) => x.map((y) => (y.id === b.id ? u : y))); };
+  const del = async (b: Benchmark) => { await growth.adminBenchDel(b.id); setItems((x) => x.filter((y) => y.id !== b.id)); };
+  const saveFreq = async (f: string) => { setFreq(f); await growth.adminBenchConfigSet(f); };
+
+  const view = items.filter((b) => b.scope === scope && (scope === "world" || b.country === country) && b.age_group === age);
+  const suggested = view.filter((b) => b.status === "suggested");
+  const approved = view.filter((b) => b.status === "approved");
+
+  const row = (b: Benchmark, pending: boolean) => (
+    <div className="adm-rel" key={b.id}>
+      <span style={{ flex: 1, fontWeight: 700 }}>{b.theme}</span>
+      <input type="number" min={0} max={100} value={b.value} style={{ width: 70 }} onChange={(e) => patch(b, { value: Math.max(0, Math.min(100, Number(e.target.value))) })} />
+      {pending
+        ? <><button className="pt-ghost adm-btn" onClick={() => patch(b, { status: "approved" })}>Approve</button><button className="need-x" onClick={() => del(b)}>✕</button></>
+        : <button className="need-x" onClick={() => del(b)}>✕</button>}
+    </div>
+  );
+
+  return (
+    <div className="dv-card">
+      <p className="muted" style={{ marginTop: 0 }}>Typical-for-age reference levels (0–100), not measured percentiles. AI can suggest values; nothing shows to parents until you approve it.</p>
+      <div className="fb-row">
+        <select value={scope} onChange={(e) => setScope(e.target.value as "world" | "country")}><option value="world">World</option><option value="country">Country</option></select>
+        {scope === "country" && <select value={country} onChange={(e) => setCountry(e.target.value)}>{COUNTRIES.map((c) => <option key={c}>{c}</option>)}</select>}
+        <select value={age} onChange={(e) => setAge(e.target.value)}>{AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}</select>
+        <button className="pt-go" disabled={busy} onClick={suggest}>{busy ? "Thinking…" : "🤖 AI-suggest"}</button>
+      </div>
+      <div className="fb-row">
+        <input value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Theme (e.g. Reading fluency)" />
+        <input type="number" min={0} max={100} value={value} style={{ maxWidth: 90 }} onChange={(e) => setValue(e.target.value)} />
+        <button className="pt-ghost" onClick={addOne}>＋ Add</button>
+      </div>
+      {msg && <div className="fb-ok">{msg}</div>}
+
+      {suggested.length > 0 && <><h3>Pending approval ({suggested.length})</h3>{suggested.map((b) => row(b, true))}</>}
+      <h3>Approved · {scope === "country" ? country : "World"} · age {age} ({approved.length})</h3>
+      {approved.length === 0 && <div className="dv-empty">None yet. Add manually or use AI-suggest, then approve.</div>}
+      {approved.map((b) => row(b, false))}
+
+      <hr style={{ border: 0, borderTop: "1px solid var(--ring)", margin: "16px 0" }} />
+      <h3 style={{ margin: "0 0 6px" }}>Auto-suggest frequency</h3>
+      <p className="muted" style={{ marginTop: 0 }}>How often the AI proposes fresh benchmark values for your review.</p>
+      <div className="seg wrap">{FREQS.map((f) => <button key={f} className={freq === f ? "on" : ""} onClick={() => saveFreq(f)}>{f}</button>)}</div>
     </div>
   );
 }

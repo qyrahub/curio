@@ -6,6 +6,7 @@ clean: the frontend only ever speaks this JSON contract over HTTPS, so it can be
 hosted anywhere (the VPS today, Lovable later) without backend changes."""
 from __future__ import annotations
 
+import json
 import uuid
 import httpx
 
@@ -531,6 +532,118 @@ def admin_data_purge(body: dict, user: dict = Depends(require_admin)) -> dict:
     if days:
         before = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=int(days))).isoformat()
     return {"collection": coll, "purged": coll_purge(coll, flt, before)}
+
+
+BENCH_FREQS = {"off", "weekly", "monthly", "quarterly"}
+
+
+@v1.get("/benchmarks")
+def benchmarks_list(scope: str | None = None, country: str | None = None, age_group: str | None = None, user: dict = Depends(get_current_user)) -> list[dict]:
+    flt: dict = {"status": "approved"}
+    if scope:
+        flt["scope"] = scope
+    if country:
+        flt["country"] = country
+    if age_group:
+        flt["age_group"] = age_group
+    return coll_list("benchmarks", flt)
+
+
+@v1.get("/admin/benchmarks")
+def admin_benchmarks(user: dict = Depends(require_admin)) -> list[dict]:
+    return coll_list("benchmarks", {})
+
+
+@v1.post("/admin/benchmarks")
+def admin_bench_put(body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = dict(body or {})
+    if not all(doc.get(k) for k in ("scope", "age_group", "theme")):
+        raise HTTPException(400, "scope, age_group and theme are required")
+    doc.setdefault("id", f"bm_{uuid.uuid4().hex[:12]}")
+    doc.setdefault("status", "approved")
+    doc.setdefault("source", "admin")
+    doc.setdefault("created_at", _now())
+    doc["updated_at"] = _now()
+    try:
+        doc["value"] = max(0, min(100, int(doc.get("value", 50))))
+    except Exception:
+        doc["value"] = 50
+    if doc.get("scope") == "world":
+        doc["country"] = ""
+    coll_put("benchmarks", doc)
+    return doc
+
+
+@v1.patch("/admin/benchmarks/{bid}")
+def admin_bench_patch(bid: str, body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = coll_get("benchmarks", {"id": bid})
+    if not doc:
+        raise HTTPException(404, "not found")
+    for k in ("value", "status", "theme", "age_group", "country", "scope"):
+        if k in (body or {}):
+            doc[k] = body[k]
+    doc["updated_at"] = _now()
+    coll_put("benchmarks", doc)
+    return doc
+
+
+@v1.delete("/admin/benchmarks/{bid}")
+def admin_bench_del(bid: str, user: dict = Depends(require_admin)) -> dict:
+    return {"deleted": coll_delete("benchmarks", {"id": bid})}
+
+
+@v1.post("/admin/benchmarks/suggest")
+def admin_bench_suggest(body: dict, user: dict = Depends(require_admin)) -> list[dict]:
+    b = body or {}
+    scope = b.get("scope", "world")
+    country = b.get("country", "") if scope == "country" else ""
+    age = b.get("age_group", "6-8")
+    themes = b.get("themes") or []
+    if not themes:
+        raise HTTPException(400, "themes are required")
+    where = f"in {country}" if country else "worldwide"
+    prompt = (
+        f"You are an expert in child development. For children aged {age} {where}, give a TYPICAL target "
+        f"proficiency level from 0-100 (100 = fully age-appropriate mastery) for each theme below. These are "
+        f"typical-for-age expectations, NOT population percentiles. Themes: {', '.join(str(t) for t in themes)}. "
+        f'Return ONLY JSON: {{"values": [{{"theme": string, "value": number}}]}}'
+    )
+    reply = assistant.ask(prompt, "develop")
+    out: list[dict] = []
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {"values": []}
+        for it in data.get("values", []):
+            th = str(it.get("theme", "")).strip()
+            if not th:
+                continue
+            try:
+                val = max(0, min(100, int(it.get("value", 50))))
+            except Exception:
+                val = 50
+            doc = {"id": f"bm_{uuid.uuid4().hex[:12]}", "scope": scope, "country": country, "age_group": age,
+                   "theme": th, "value": val, "status": "suggested", "source": "ai",
+                   "created_at": _now(), "updated_at": _now()}
+            coll_put("benchmarks", doc)
+            out.append(doc)
+    except Exception:
+        pass
+    return out
+
+
+@v1.get("/admin/benchmarks/config")
+def admin_bench_config_get(user: dict = Depends(require_admin)) -> dict:
+    return coll_get("bench_config", {"id": "config"}) or {"id": "config", "frequency": "monthly"}
+
+
+@v1.post("/admin/benchmarks/config")
+def admin_bench_config_set(body: dict, user: dict = Depends(require_admin)) -> dict:
+    freq = (body or {}).get("frequency", "monthly")
+    if freq not in BENCH_FREQS:
+        raise HTTPException(400, "invalid frequency")
+    doc = {"id": "config", "frequency": freq, "updated_at": _now()}
+    coll_put("bench_config", doc)
+    return doc
 
 
 @v1.post("/ask-vision")

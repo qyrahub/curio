@@ -18,7 +18,7 @@ export type Mode = "child" | "parent" | "admin";
 
 export interface ChildProfile {
   id: string; name: string; age: number;
-  gender: "girl" | "boy" | "other"; theme: ThemeKey; interests: string[];
+  gender: "girl" | "boy" | "other"; theme: ThemeKey; interests: string[]; country?: string;
   displayMode?: "light" | "dark" | "system";
 }
 export interface AgeBand { min: number; max: number; label: string; }
