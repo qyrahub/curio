@@ -32,7 +32,7 @@ const DISC = "This is practical guidance to support your parenting — not a dia
 
 function pImg(p: string) { return "The parent has ATTACHED A PHOTO you can see (typed/printed text = the teacher's instructions/task; handwriting = the child's own answers). Read it first; do not ask about anything already visible in it. " + p; }
 function ctxLine(c: FlowCtx) {
-  return `Child: ${c.name}, age ${c.age}, ${c.gender}. Interests: ${c.interests.join(", ") || "—"}. Strengths: ${c.strengths.join(", ") || "—"}. Struggles: ${c.struggles.join(", ") || "—"}. Known gaps: ${c.gaps.join(", ") || "—"}.`;
+  return `Child: ${c.name}, age ${c.age}, ${c.gender}. Interests: ${(c.interests || []).join(", ") || "—"}. Strengths: ${(c.strengths || []).join(", ") || "—"}. Struggles: ${(c.struggles || []).join(", ") || "—"}. Known gaps: ${(c.gaps || []).join(", ") || "—"}.`;
 }
 function fallback(area: string, c: FlowCtx): Result {
   const top = (c.interests[0] || "their favourite things").toLowerCase();
@@ -143,7 +143,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
 
   const areasToConsider = useMemo(() => {
     const open = needs.filter((n) => n.status !== "achieved").map((n) => n.area);
-    return Array.from(new Set([...ctx.gaps, ...ctx.struggles, ...open].filter(Boolean))).slice(0, 8);
+    return Array.from(new Set([...(ctx.gaps || []), ...(ctx.struggles || []), ...open].filter(Boolean))).slice(0, 8);
   }, [needs, ctx.gaps, ctx.struggles]);
 
   const addGantt = (task: string, focus: string, days = 14) => setItems([...items, newGanttItem(task, focus, days)]);
@@ -252,7 +252,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
           </div>
 
           <h3 className="gf-h">Where {ctx.name} is right now</h3>
-          <p className="muted" style={{ marginTop: 0 }}>Strengths: {ctx.strengths.join(", ") || "—"}. Watching: {ctx.gaps.join(", ") || "—"}.</p>
+          <p className="muted" style={{ marginTop: 0 }}>Strengths: {(ctx.strengths || []).join(", ") || "—"}. Watching: {(ctx.gaps || []).join(", ") || "—"}.</p>
 
           {needs.length > 0 && (
             <div className="gf-needlist">

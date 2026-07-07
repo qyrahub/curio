@@ -50,12 +50,12 @@ export default function Develop() {
 
   if (!focusChild) return <div className="view"><p className="muted">Add a child profile to begin.</p></div>;
   const focus = focusChild;
-  const d = detailsAll[focus.id] || defaultDetails(focus);
+  const d = { ...defaultDetails(focus), ...(detailsAll[focus.id] || {}) };
   const t = THEMES[focus.theme];
   const themeStyle = { "--dv-accent": t.accent, "--dv-deep": t.deep, "--dv-t1": t.t1, "--dv-t2": t.t2 } as CSSProperties;
   const ctx: FlowCtx = {
-    id: focus.id, name: focus.name, age: focus.age, gender: focus.gender, interests: focus.interests,
-    strengths: d.strengths, struggles: d.struggles, gaps: d.gaps, likes: d.likes, dislikes: d.dislikes,
+    id: focus.id, name: focus.name, age: focus.age, gender: focus.gender, interests: focus.interests || [],
+    strengths: d.strengths || [], struggles: d.struggles || [], gaps: d.gaps || [], likes: d.likes || [], dislikes: d.dislikes || [],
   };
 
   return (

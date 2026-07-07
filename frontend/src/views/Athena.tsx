@@ -122,7 +122,7 @@ export default function Athena() {
 
           <div className="coach-cols">
             <div className="coach-card good"><h4>✅ Signs it's working</h4><ul>{plan.indicators.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
-            <div className="coach-card watch"><h4>⚠️ Watch for (possible gaps)</h4><ul>{plan.gaps.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+            <div className="coach-card watch"><h4>⚠️ Watch for (possible gaps)</h4><ul>{(plan.gaps || []).map((s, i) => <li key={i}>{s}</li>)}</ul></div>
           </div>
 
           <div className="coach-card nudges"><h4>💡 Gentle nudges</h4><ul>{plan.nudges.map((s, i) => <li key={i}>{s}</li>)}</ul></div>

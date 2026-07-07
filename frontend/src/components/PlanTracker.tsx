@@ -21,7 +21,7 @@ type Phase = "intro" | "clarify" | "reflect" | "result";
 const DISCLAIMER = "Practical guidance to support your parenting — not a diagnosis or medical advice.";
 
 function ctxLine(c: ChildCtx) {
-  return `Child: ${c.name}, age ${c.age}, ${c.gender}. Interests: ${c.interests.join(", ") || "—"}. Strengths: ${c.strengths.join(", ") || "—"}. Struggles: ${c.struggles.join(", ") || "—"}. Known gaps: ${c.gaps.join(", ") || "—"}.`;
+  return `Child: ${c.name}, age ${c.age}, ${c.gender}. Interests: ${(c.interests || []).join(", ") || "—"}. Strengths: ${(c.strengths || []).join(", ") || "—"}. Struggles: ${(c.struggles || []).join(", ") || "—"}. Known gaps: ${(c.gaps || []).join(", ") || "—"}.`;
 }
 function grabJSON<T>(reply: string): T | null {
   try {
