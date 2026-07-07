@@ -14,6 +14,7 @@ export const NEED_STATUS: { key: NeedStatus; label: string; color: string }[] = 
 export interface GrowthNeed { id: string; child_id: string; title: string; area: string; status: NeedStatus; note?: string; created_at?: string; updated_at?: string; }
 export interface ReviewCycle { id: string; child_id: string; period: string; summary: string; achieved: string[]; not_achieved: string[]; improvements: string[]; next: string[]; scores?: Record<string, number>; issues?: string[]; strengths?: string[]; created_at?: string; }
 export interface Evaluation { id: string; child_id: string; title: string; source_text: string; summary: string; working: string[]; watch: string[]; recommendations: { task: string; focus: string; durationDays: number }[]; created_at?: string; }
+export interface Portrait { id: string; child_id: string; summary: string; strengths: string[]; challenges: string[]; improving: string[]; watch: string[]; inputs?: number; created_at?: string; }
 export interface FeedbackItem { id: string; user_id?: string; email?: string; kind: "feedback" | "feature"; message: string; status: string; admin_note?: string; notified?: boolean; created_at?: string; }
 export interface Benchmark { id: string; scope: "world" | "country"; country?: string; age_group: string; theme: string; value: number; status: string; source?: string; }
 export interface ReleaseItem { id: string; title: string; source_id?: string; status: string; start?: string; end?: string; progress?: number; created_at?: string; }
@@ -32,6 +33,8 @@ export const growth = {
   putReview: (rc: Partial<ReviewCycle> & { child_id: string }) => api.growthPut("reviews", rc as Record<string, unknown>).then(asReview),
   delReview: (id: string) => api.growthDelete("reviews", id),
   listEvals: (childId: string) => api.growthList("evaluations", childId).then((r) => r.map(asEval)),
+  listPortraits: (childId: string) => api.growthList("portraits", childId).then((r) => r as unknown as Portrait[]),
+  putPortrait: (p: Partial<Portrait> & { child_id: string }) => api.growthPut("portraits", p as Record<string, unknown>).then((r) => r as unknown as Portrait),
   putEval: (e: Partial<Evaluation> & { child_id: string }) => api.growthPut("evaluations", e as Record<string, unknown>).then(asEval),
   delEval: (id: string) => api.growthDelete("evaluations", id),
   submit: (kind: "feedback" | "feature", message: string, email?: string) => api.feedbackSubmit({ kind, message, email }),

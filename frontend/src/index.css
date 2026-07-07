@@ -1521,3 +1521,22 @@ main.wrap{padding-bottom:110px}
 /* Intelligence time scrubber */
 .intel-scrub{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .intel-scrub input[type=range]{flex:1;min-width:160px;accent-color:var(--gf-accent,#5AA7E6)}
+
+/* Per-child Brain */
+.bc{display:flex;flex-direction:column;gap:14px}
+.bc-card{background:var(--surface);border:1px solid var(--ring);border-radius:18px;padding:18px 20px}
+.bc-h{display:flex;align-items:center;gap:8px;font-family:Fredoka,inherit;font-weight:600;font-size:1.05rem;margin-bottom:8px}
+.bc-disc{margin-top:0;font-size:.86rem;font-style:italic}
+.bc-feed{display:flex;flex-direction:column;gap:8px}
+.bc-item{display:flex;gap:12px;align-items:flex-start;background:var(--paper);border:1px solid var(--ring);border-radius:12px;padding:10px 12px}
+.bc-ic{font-size:1.1rem;flex:none}
+.bc-sub{font-size:.82rem;margin-top:2px}
+.bc-when{margin-left:auto;font-size:.74rem;color:var(--ink-soft);font-weight:700;flex:none}
+.bc-summary{background:var(--paper);border-left:4px solid var(--bc-accent);border-radius:12px;padding:14px 16px;font-size:1.05rem;line-height:1.5;margin-bottom:12px}
+.bc-facet{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap}
+.bc-ftag{flex:none;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 10px;border-radius:999px;min-width:84px;text-align:center}
+.bc-ftag.good{background:#EAF8F0;color:#1C6B45}.bc-ftag.bad{background:#FDECE8;color:#A63A26}
+.bc-ftag.improving{background:#FFF3E0;color:#8A5A12}.bc-ftag.watch{background:#EEF;color:#4a4a6a}
+.bc-pill{display:inline-block;background:var(--paper);border:1px solid var(--ring);border-radius:999px;padding:3px 10px;font-size:.8rem;font-weight:600;margin:0 6px 6px 0;color:var(--ink)}
+.bc-gen{font-size:.76rem;margin-top:8px}
+.bc-shape p{line-height:1.5;color:var(--ink);margin:0 0 12px}

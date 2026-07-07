@@ -390,7 +390,7 @@ def me(claims: dict = Depends(get_current_user)) -> UserPublic:
 
 
 
-GROWTH_KINDS = {"needs": "growth_needs", "reviews": "growth_reviews", "evaluations": "growth_evaluations"}
+GROWTH_KINDS = {"needs": "growth_needs", "reviews": "growth_reviews", "evaluations": "growth_evaluations", "portraits": "brain_portraits"}
 
 
 def _uid(user: dict) -> str:

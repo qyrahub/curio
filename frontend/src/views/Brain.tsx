@@ -3,10 +3,13 @@ import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
 import type { BrainItem } from "../types";
+import { useProfile, THEMES } from "../lib/profile";
+import BrainChild from "../components/BrainChild";
 
 type Mode = "idea" | "url" | "file";
 
 export default function Brain() {
+  const { children, focusChild, setFocusChild } = useProfile();
   const [log, setLog] = useState<BrainItem[]>([]);
   const [mode, setMode] = useState<Mode>("idea");
   const [text, setText] = useState("");
@@ -38,6 +41,18 @@ export default function Brain() {
   return (
     <div className="view">
       <PageHero kind="brain" eyebrow="The Brain" title={<>What {brand.name} is <em>learning</em></>} tease="Feed it ideas, links, files, audio or video — everything flows back into better plans for every family." />
+      {focusChild && (
+        <>
+          <div className="seg wrap" style={{ margin: "4px 0 16px" }}>
+            {children.map((k) => (
+              <button key={k.id} className={k.id === focusChild.id ? "on" : ""} onClick={() => setFocusChild(k.id)}>{THEMES[k.theme].emoji} {k.name}</button>
+            ))}
+          </div>
+          <BrainChild childId={focusChild.id} childName={focusChild.name} childAge={focusChild.age} accent={THEMES[focusChild.theme].accent} onGoDevelop={() => { window.location.hash = "develop"; }} />
+          <h3 style={{ marginTop: 30 }}>Feed the shared Brain</h3>
+          <p className="muted" style={{ marginTop: -6, marginBottom: 12 }}>Add ideas, links or files to the ecosystem-wide Brain that informs every family.</p>
+        </>
+      )}
       <div className="panel brainwrap">
         <div className="eyebrow"><span className="pulse-dot" /> Feed The Brain</div>
         <div className="seg" style={{ marginTop: 8 }}>
