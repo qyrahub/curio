@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askJSON, askVisionJSON } from "../lib/ai";
 import { api } from "../lib/api";
+import { extractFileText } from "../lib/fileParse";
 import { growth, feedBrain, NEED_STATUS, type GrowthNeed, type ReviewCycle } from "../lib/growth";
 import { useGantt, newGanttItem } from "../lib/devstore";
 import GanttChart from "./GanttChart";
@@ -71,7 +72,10 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
   const [pendingQ, setPendingQ] = useState("");
   const [answer, setAnswer] = useState("");
   const [phase, setPhase] = useState<"compose" | "clarify">("compose");
-  const [inputMode, setInputMode] = useState<"type" | "url" | "photo">("type");
+  const [inputMode, setInputMode] = useState<"type" | "url" | "photo" | "file">("type");
+  const [docName, setDocName] = useState("");
+  const [docBusy, setDocBusy] = useState(false);
+  const [listening, setListening] = useState(false);
   const [url, setUrl] = useState("");
   const [imgData, setImgData] = useState("");
   const [imgType, setImgType] = useState("image/jpeg");
@@ -92,6 +96,25 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
     };
     img.onerror = () => { URL.revokeObjectURL(url); setErr("Couldn't read that image - try another photo."); };
     img.src = url;
+  };
+  const onDoc = async (f: File) => {
+    setDocName(f.name); setDocBusy(true); setErr("");
+    try { const t = await extractFileText(f); setText(t); if (!t.trim()) setErr("No readable text found in that file."); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Couldn't read that file."); }
+    setDocBusy(false);
+  };
+  const dictate = () => {
+    interface SRRes { results: ArrayLike<ArrayLike<{ transcript: string }>>; }
+    interface SRInst { lang: string; interimResults: boolean; onresult: (e: SRRes) => void; onend: () => void; onerror: () => void; start: () => void; }
+    const W = window as unknown as { webkitSpeechRecognition?: new () => SRInst; SpeechRecognition?: new () => SRInst };
+    const SR = W.webkitSpeechRecognition || W.SpeechRecognition;
+    if (!SR) { setErr("Dictation needs Chrome or Edge."); return; }
+    const rec = new SR();
+    rec.lang = "en-ZA"; rec.interimResults = false;
+    rec.onresult = (ev) => { const t = ev.results[0][0].transcript; setText((x) => (x ? x + " " : "") + t); };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    setListening(true); try { rec.start(); } catch { setListening(false); }
   };
 
   const [review, setReview] = useState<Result | null>(null);
@@ -152,8 +175,8 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
   }
 
   const startNeeds = () => {
-    const hasInput = (inputMode === "type" && text.trim()) || (inputMode === "url" && url.trim()) || (inputMode === "photo" && imgData);
-    if (!hasInput) { setErr(inputMode === "photo" ? "Upload a photo first." : inputMode === "url" ? "Paste a URL first." : "Describe the need first."); return; }
+    const hasInput = ((inputMode === "type" || inputMode === "file") && text.trim()) || (inputMode === "url" && url.trim()) || (inputMode === "photo" && imgData);
+    if (!hasInput) { setErr(inputMode === "photo" ? "Upload a photo first." : inputMode === "url" ? "Paste a URL first." : inputMode === "file" ? "Choose a file first." : "Describe the need first."); return; }
     if (deep) nextClarify([]); else analyze([]);
   };
   const submitClarify = (skip: boolean) => { const h = [...clarifs, { q: pendingQ, a: skip ? "(skipped)" : answer.trim() || "(skipped)" }]; setClarifs(h); nextClarify(h); };
@@ -269,11 +292,11 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
               <h3 className="gf-h">What do you need help with for {ctx.name}?</h3>
               <p className="muted" style={{ marginTop: 0 }}>Be specific — the real situation. e.g. "can't sit still for homework, we end up in tears every evening."</p>
               <div className="gf-imode">
-                {(["type", "url", "photo"] as const).map((m) => (
-                  <button key={m} className={inputMode === m ? "on" : ""} onClick={() => setInputMode(m)}>{m === "type" ? "✍ Type" : m === "url" ? "🔗 URL" : "📷 Photo"}</button>
+                {(["type", "url", "photo", "file"] as const).map((m) => (
+                  <button key={m} className={inputMode === m ? "on" : ""} onClick={() => setInputMode(m)}>{m === "type" ? "✍ Type" : m === "url" ? "🔗 URL" : m === "photo" ? "📷 Photo" : "📄 File"}</button>
                 ))}
               </div>
-              {inputMode === "type" && <textarea className="gf-ta" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Help me with ${ctx.name}…`} />}
+              {inputMode === "type" && <div className="gf-dictate"><textarea className="gf-ta" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Help me with ${ctx.name}…`} /><button type="button" className={"gf-mic" + (listening ? " on" : "")} onClick={dictate} title="Dictate">{listening ? "● Listening" : "🎤 Dictate"}</button></div>}
               {inputMode === "url" && <>
                 <input className="gf-ta" style={{ minHeight: 0 }} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… (a report, article or worksheet page)" />
                 <textarea className="gf-ta" rows={2} style={{ marginTop: 8 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="Optional: what should I look for?" />
@@ -284,6 +307,14 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
                   <span>{imgName ? `📎 ${imgName}` : "📷 Choose a photo of the work / situation"}</span>
                 </label>
                 <textarea className="gf-ta" rows={2} style={{ marginTop: 8 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="Optional: what should I look for?" />
+              </>}
+              {inputMode === "file" && <>
+                <label className="gf-file">
+                  <input type="file" accept=".pdf,.docx,.txt,.md,.csv" onChange={(e) => { const f = e.target.files?.[0]; if (f) onDoc(f); }} />
+                  <span>{docBusy ? "Reading…" : docName ? `📎 ${docName}` : "📄 Choose a PDF, Word (.docx) or text file"}</span>
+                </label>
+                {text && <div className="muted gf-doc">Extracted {text.length} characters — edit below or note what to look for.</div>}
+                <textarea className="gf-ta" rows={3} style={{ marginTop: 8 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="Extracted text (editable)…" />
               </>}
               <div className="gf-frow">
                 <div className="gf-field"><label>Area</label>

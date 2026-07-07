@@ -1551,3 +1551,11 @@ main.wrap{padding-bottom:110px}
 .pw-legrow{display:flex;justify-content:space-between;gap:10px;font-size:.86rem;padding:2px 0;border-bottom:1px solid var(--ring)}
 .pw-legrow b{color:var(--ink)}
 @media(max-width:720px){.pw{grid-template-columns:1fr}}
+
+/* Needs: dictation mic + file extract */
+.gf-dictate{position:relative}
+.gf-mic{position:absolute;right:10px;bottom:10px;border:1.5px solid var(--ring);background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:6px 12px;font:inherit;font-weight:700;font-size:.82rem;cursor:pointer}
+.gf-mic.on{background:#FF7A66;color:#fff;border-color:#FF7A66;animation:gfpulse 1.2s ease-in-out infinite}
+@keyframes gfpulse{0%,100%{opacity:1}50%{opacity:.55}}
+.gf-doc{font-size:.82rem;margin-top:8px}
+@media (prefers-reduced-motion:reduce){.gf-mic.on{animation:none}}
