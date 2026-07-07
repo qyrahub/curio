@@ -5,6 +5,17 @@ import { type ReviewCycle } from "./growth";
    child's reviews. Levels are computed only from the child's OWN history —
    honest and self-relative. */
 
+export const SECTIONS = [
+  { title: "Cognitive & general learning", color: "#2EC4B6" },
+  { title: "School subjects", color: "#5AA7E6" },
+  { title: "Focus areas", color: "#FF7A66" },
+];
+export function sectionOf(theme: string): 0 | 1 | 2 {
+  const a = theme.toLowerCase();
+  if (/read|writ|math|spell|science|numeracy|literacy|subject|handwriting|comprehension|vocabulary|punctuation|capital|sentence/.test(a)) return 1;
+  if (/focus|attention|behav|emotion|confidence|social|routine|sleep|self|memory|language|cognit|regulat|impuls|listen|organis/.test(a)) return 0;
+  return 2;
+}
 export function normTag(t: string): string {
   const s = (t || "").trim().replace(/\s+/g, " ");
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
@@ -38,7 +49,7 @@ export function themeLevels(reviews: ReviewCycle[], asOf: number = Date.now()): 
     (r.strengths || []).forEach((x) => bump(x, "s", t));
     (r.issues || []).forEach((x) => bump(x, "i", t));
   });
-  m.forEach((e) => { e.level = Math.round(clamp(50 + 16 * (e.strengths - e.issues))); });
+  m.forEach((e) => { e.level = Math.round(clamp(50 + 22 * (e.strengths - e.issues))); });
   return m;
 }
 

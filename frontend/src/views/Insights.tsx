@@ -5,6 +5,7 @@ import { useProfile, THEMES } from "../lib/profile";
 import EvolutionChart from "../components/EvolutionChart";
 import IssuesTimeline from "../components/IssuesTimeline";
 import IntelligencePanel from "../components/IntelligencePanel";
+import ProfileWheel from "../components/ProfileWheel";
 import BenchmarkRadars from "../components/BenchmarkRadars";
 import ValueTiles from "../components/ValueTiles";
 
@@ -242,6 +243,12 @@ export default function Insights() {
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">✦</span><h2>Intelligence — {focus.name}'s bigger picture</h2></div>
         <IntelligencePanel childId={focus.id} childName={focus.name} />
+      </section>
+
+      {/* section 0c2 — profile wheel (sunburst) */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">◍</span><h2>{focus.name}'s profile wheel</h2></div>
+        <ProfileWheel childId={focus.id} childName={focus.name} />
       </section>
 
       {/* section 0d — benchmarking radars */}
