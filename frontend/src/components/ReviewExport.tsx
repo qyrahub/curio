@@ -10,7 +10,7 @@ export default function ReviewExport({ data, targetRef }: { data: ReviewExportDa
   const doSnap = async () => {
     if (!targetRef.current) return;
     setBusy(true);
-    const ok = await snapshotPNG(targetRef.current, data.childName);
+    const ok = await snapshotPNG(targetRef.current, data.childName, data);
     setBusy(false);
     flash(ok ? "Image saved ✓" : "Snapshot failed — try Print → Save as PDF");
   };

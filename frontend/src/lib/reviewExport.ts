@@ -48,6 +48,13 @@ export function buildReviewHTML(d: ReviewExportData): string {
 </body></html>`;
 }
 
+export function reviewFragment(d: ReviewExportData): string {
+  const full = buildReviewHTML(d);
+  const style = full.match(/<style>[\s\S]*?<\/style>/)?.[0] || "";
+  const body = full.match(/<body>([\s\S]*?)<\/body>/)?.[1] || "";
+  return style + body;
+}
+
 function esc(s: string): string {
   return (s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 }
@@ -111,11 +118,22 @@ async function loadHtml2Canvas(): Promise<H2C> {
   if (!w.html2canvas) throw new Error("html2canvas unavailable");
   return w.html2canvas;
 }
-export async function snapshotPNG(node: HTMLElement, childName: string): Promise<boolean> {
+export async function snapshotPNG(node: HTMLElement | null, childName: string, data?: ReviewExportData): Promise<boolean> {
+  let temp: HTMLElement | null = null;
   try {
     const h2c = await loadHtml2Canvas();
-    const canvas = await h2c(node, { scale: 2, backgroundColor: null, useCORS: true });
+    let target: HTMLElement | null = node;
+    if (data) {
+      temp = document.createElement("div");
+      temp.style.cssText = "position:fixed;left:-10000px;top:0;width:820px;background:#ffffff";
+      temp.innerHTML = reviewFragment(data);
+      document.body.appendChild(temp);
+      target = temp;
+    }
+    if (!target) return false;
+    const canvas = await h2c(target, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
     await new Promise<void>((res) => canvas.toBlob((b) => { if (b) downloadBlob(b, `${childName}-review.png`); res(); }, "image/png"));
     return true;
   } catch { return false; }
+  finally { if (temp && temp.parentNode) temp.parentNode.removeChild(temp); }
 }

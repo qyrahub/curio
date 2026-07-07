@@ -685,6 +685,18 @@ app.mount("/v1", v1)
 import os as _os  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
+
+@app.middleware("http")
+async def _spa_cache_headers(request, call_next):
+    resp = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith("/index.html"):
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    elif "/assets/" in path:
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return resp
+
+
 _spa_dir = _os.getenv("CURIO_SPA_DIR") or _os.path.join(
     _os.path.dirname(_os.path.dirname(__file__)), "..", "frontend", "dist"
 )

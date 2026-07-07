@@ -6,7 +6,7 @@ import { themeLevels, sectionOf, SECTIONS } from "../lib/themes";
    Spokes = themes, grouped into coloured sectors, ring depth = level, with a
    legend of exact percentages. Built only from the child's own history. */
 
-const size = 380, cx = size / 2, cy = size / 2, rIn = 46, rOut = size / 2 - 66;
+const size = 380, PAD = 84, cx = size / 2, cy = size / 2, rIn = 46, rOut = size / 2 - 66;
 const polar = (r: number, deg: number) => { const a = ((deg - 90) * Math.PI) / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
 function wedge(rInner: number, rOuter: number, a0: number, a1: number) {
   const [x0o, y0o] = polar(rOuter, a0), [x1o, y1o] = polar(rOuter, a1);
@@ -41,7 +41,7 @@ export default function ProfileWheel({ childId, childName }: { childId: string; 
 
   return (
     <div className="pw">
-      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size }}>
+      <svg viewBox={`${-PAD} 0 ${size + 2 * PAD} ${size}`} width="100%" style={{ maxWidth: size + 2 * PAD }}>
         {[25, 50, 75, 100].map((lv) => <circle key={lv} cx={cx} cy={cy} r={rIn + (lv / 100) * (rOut - rIn)} fill="none" stroke="var(--ring)" strokeWidth={1} opacity={0.4} />)}
         {spokes.map((s, i) => {
           const a0 = i * per + gap, a1 = (i + 1) * per - gap;
@@ -55,8 +55,8 @@ export default function ProfileWheel({ childId, childName }: { childId: string; 
         {bands.map((b, i) => <path key={i} d={wedge(rOut + 6, rOut + 14, b.a0 + gap, b.a1 - gap)} fill={SECTIONS[b.sec].color} opacity={0.9} />)}
         {spokes.map((s, i) => {
           const mid = i * per + per / 2;
-          const [lx, ly] = polar(rOut + 26, mid);
-          return <text key={s.theme} x={lx} y={ly} className="pw-lab" textAnchor={Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end"}>{s.theme.length > 14 ? s.theme.slice(0, 13) + "…" : s.theme}</text>;
+          const [lx, ly] = polar(rOut + 22, mid);
+          return <text key={s.theme} x={lx} y={ly} className="pw-lab" textAnchor={Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end"}>{s.theme.length > 20 ? s.theme.slice(0, 19) + "…" : s.theme}</text>;
         })}
         <text x={cx} y={cy + 4} textAnchor="middle" className="pw-center">{childName}</text>
       </svg>
