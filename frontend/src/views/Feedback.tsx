@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { UserPublic } from "../types";
 import PageHero from "../components/PageHero";
-import { growth, type FeedbackItem, type ReleaseItem, type Benchmark } from "../lib/growth";
+import { growth, type FeedbackItem, type ReleaseItem, type Benchmark, type Knowledge } from "../lib/growth";
 import { ISSUE_TAGS, STRENGTH_TAGS } from "../lib/tags";
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
@@ -67,19 +67,20 @@ function UserForm({ user }: { user: UserPublic | null }) {
 }
 
 function AdminPanel() {
-  const [tab, setTab] = useState<"queue" | "release" | "data" | "benchmarks">("queue");
+  const [tab, setTab] = useState<"queue" | "release" | "data" | "benchmarks" | "knowledge">("queue");
   return (
     <div style={{ marginTop: 26 }}>
       <h2 style={{ marginBottom: 10 }}>Admin</h2>
       <div className="tabs">
-        {(["queue", "release", "data", "benchmarks"] as const).map((t) => (
-          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : t === "data" ? "Data controls" : "Benchmarks"}</button>
+        {(["queue", "release", "data", "benchmarks", "knowledge"] as const).map((t) => (
+          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : t === "data" ? "Data controls" : t === "benchmarks" ? "Benchmarks" : "Knowledge"}</button>
         ))}
       </div>
       {tab === "queue" && <Queue />}
       {tab === "release" && <Release />}
       {tab === "data" && <DataControls />}
       {tab === "benchmarks" && <Benchmarks />}
+      {tab === "knowledge" && <KnowledgeAdmin />}
     </div>
   );
 }
@@ -234,6 +235,76 @@ function Benchmarks() {
       <h3 style={{ margin: "0 0 6px" }}>Auto-suggest frequency</h3>
       <p className="muted" style={{ marginTop: 0 }}>How often the AI proposes fresh benchmark values for your review.</p>
       <div className="seg wrap">{FREQS.map((f) => <button key={f} className={freq === f ? "on" : ""} onClick={() => saveFreq(f)}>{f}</button>)}</div>
+    </div>
+  );
+}
+
+function KnowledgeAdmin() {
+  const [items, setItems] = useState<Knowledge[]>([]);
+  const [freq, setFreq] = useState("monthly");
+  const [topic, setTopic] = useState("");
+  const [title, setTitle] = useState("");
+  const [tradition, setTradition] = useState("");
+  const [summary, setSummary] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const load = () => { growth.adminKnowledge().then(setItems).catch(() => {}); growth.adminKnowledgeConfigGet().then((c) => setFreq(c.frequency)).catch(() => {}); };
+  useEffect(load, []);
+
+  const addOne = async () => {
+    if (!title.trim() || !summary.trim()) { setMsg("Title and summary are required."); return; }
+    await growth.adminKnowledgePut({ title: title.trim(), tradition: tradition.trim(), summary: summary.trim(), status: "approved" });
+    setTitle(""); setTradition(""); setSummary(""); setMsg(""); load();
+  };
+  const suggest = async () => {
+    if (!topic.trim()) { setMsg("Enter a topic to draft."); return; }
+    setBusy(true); setMsg("");
+    try { await growth.adminKnowledgeSuggest(topic.trim()); setMsg("Draft added below — review and approve."); setTopic(""); load(); }
+    catch { setMsg("Draft failed — check the model is configured."); }
+    setBusy(false);
+  };
+  const patch = async (k: Knowledge, p: Partial<Knowledge>) => { const u = await growth.adminKnowledgePatch(k.id, p); setItems((x) => x.map((y) => (y.id === k.id ? u : y))); };
+  const del = async (k: Knowledge) => { await growth.adminKnowledgeDel(k.id); setItems((x) => x.filter((y) => y.id !== k.id)); };
+  const saveFreq = async (f: string) => { setFreq(f); await growth.adminKnowledgeConfigSet(f); };
+
+  const suggested = items.filter((k) => k.status === "suggested");
+  const approved = items.filter((k) => k.status === "approved");
+  const card = (k: Knowledge, pending: boolean) => (
+    <div className="dv-card" key={k.id} style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+        <b>{k.title}</b><span className="muted" style={{ fontSize: ".8rem" }}>{k.tradition}{k.source_type === "ai" ? " · AI-drafted" : k.source_type === "seed" ? " · seed" : ""}</span>
+      </div>
+      <p className="muted" style={{ margin: "6px 0" }}>{k.summary}</p>
+      <div className="fb-row">
+        {pending && <button className="pt-go adm-btn" onClick={() => patch(k, { status: "approved" })}>Approve</button>}
+        <button className="need-x" onClick={() => del(k)}>Delete ✕</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="dv-card">
+      <p className="muted" style={{ marginTop: 0 }}>The shared knowledge base that informs guidance for every family. AI can draft original summaries; nothing goes live until you approve it. No copyrighted text is stored.</p>
+      <div className="fb-row">
+        <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Draft a tradition (e.g. 'Te Whāriki, New Zealand')" style={{ flex: 1 }} />
+        <button className="pt-go" disabled={busy} onClick={suggest}>{busy ? "Drafting…" : "🤖 AI-draft"}</button>
+      </div>
+      <div className="fb-row" style={{ flexWrap: "wrap" }}>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+        <input value={tradition} onChange={(e) => setTradition(e.target.value)} placeholder="Tradition / origin" />
+      </div>
+      <textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Original summary (2-3 sentences)" rows={2} style={{ width: "100%", marginTop: 8 }} />
+      <div className="fb-row"><button className="pt-ghost" onClick={addOne}>＋ Add entry</button></div>
+      {msg && <div className="fb-ok">{msg}</div>}
+
+      {suggested.length > 0 && <><h3>Pending approval ({suggested.length})</h3>{suggested.map((k) => card(k, true))}</>}
+      <h3>Approved ({approved.length})</h3>
+      {approved.map((k) => card(k, false))}
+
+      <hr style={{ border: 0, borderTop: "1px solid var(--ring)", margin: "16px 0" }} />
+      <h3 style={{ margin: "0 0 6px" }}>Auto-draft frequency</h3>
+      <p className="muted" style={{ marginTop: 0 }}>How often the AI proposes fresh knowledge entries for your review.</p>
+      <div className="seg wrap">{["off", "weekly", "monthly", "quarterly"].map((f) => <button key={f} className={freq === f ? "on" : ""} onClick={() => saveFreq(f)}>{f}</button>)}</div>
     </div>
   );
 }

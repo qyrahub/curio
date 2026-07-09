@@ -89,5 +89,13 @@ export const api = {
   adminBenchSuggest: (body: Record<string, unknown>) => http<Record<string, unknown>[]>("/admin/benchmarks/suggest", { method: "POST", body: JSON.stringify(body) }),
   adminBenchConfigGet: () => http<Record<string, unknown>>("/admin/benchmarks/config"),
   adminBenchConfigSet: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/benchmarks/config", { method: "POST", body: JSON.stringify(body) }),
+  knowledge: () => http<Record<string, unknown>[]>("/knowledge"),
+  adminKnowledge: () => http<Record<string, unknown>[]>("/admin/knowledge"),
+  adminKnowledgePut: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge", { method: "POST", body: JSON.stringify(body) }),
+  adminKnowledgePatch: (id: string, body: Record<string, unknown>) => http<Record<string, unknown>>(`/admin/knowledge/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  adminKnowledgeDel: (id: string) => http<{ deleted: number }>(`/admin/knowledge/${id}`, { method: "DELETE" }),
+  adminKnowledgeSuggest: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge/suggest", { method: "POST", body: JSON.stringify(body) }),
+  adminKnowledgeConfigGet: () => http<Record<string, unknown>>("/admin/knowledge/config"),
+  adminKnowledgeConfigSet: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge/config", { method: "POST", body: JSON.stringify(body) }),
 };
 type EduItemList = import("../types").EduItem[];

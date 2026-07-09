@@ -1559,3 +1559,13 @@ main.wrap{padding-bottom:110px}
 @keyframes gfpulse{0%,100%{opacity:1}50%{opacity:.55}}
 .gf-doc{font-size:.82rem;margin-top:8px}
 @media (prefers-reduced-motion:reduce){.gf-mic.on{animation:none}}
+
+/* Knowledge base cards */
+.kb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.kb-card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;padding:16px 18px}
+.kb-tradition{font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gf-accent,#5AA7E6);margin-bottom:4px}
+.kb-card h4{margin:0 0 6px;font-size:1rem}
+.kb-card p{margin:0 0 10px;font-size:.9rem;line-height:1.45;color:var(--ink-soft)}
+.kb-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.kb-tag{background:var(--paper);border:1px solid var(--ring);border-radius:999px;padding:3px 9px;font-size:.74rem;font-weight:600;color:var(--ink)}
+.kb-src{font-size:.74rem;color:var(--ink-soft);font-style:italic}

@@ -16,6 +16,7 @@ export interface ReviewCycle { id: string; child_id: string; period: string; sum
 export interface Evaluation { id: string; child_id: string; title: string; source_text: string; summary: string; working: string[]; watch: string[]; recommendations: { task: string; focus: string; durationDays: number }[]; created_at?: string; }
 export interface Portrait { id: string; child_id: string; summary: string; strengths: string[]; challenges: string[]; improving: string[]; watch: string[]; inputs?: number; created_at?: string; }
 export interface FeedbackItem { id: string; user_id?: string; email?: string; kind: "feedback" | "feature"; message: string; status: string; admin_note?: string; notified?: boolean; created_at?: string; }
+export interface Knowledge { id: string; title: string; tradition?: string; summary: string; source?: string; tags?: string[]; status: string; source_type?: string; }
 export interface Benchmark { id: string; scope: "world" | "country"; country?: string; age_group: string; theme: string; value: number; status: string; source?: string; }
 export interface ReleaseItem { id: string; title: string; source_id?: string; status: string; start?: string; end?: string; progress?: number; created_at?: string; }
 
@@ -54,6 +55,14 @@ export const growth = {
   adminBenchSuggest: (b: { scope: string; country?: string; age_group: string; themes: string[] }) => api.adminBenchSuggest(b as Record<string, unknown>).then((r) => r as unknown as Benchmark[]),
   adminBenchConfigGet: () => api.adminBenchConfigGet().then((r) => r as unknown as { frequency: string }),
   adminBenchConfigSet: (frequency: string) => api.adminBenchConfigSet({ frequency }).then((r) => r as unknown as { frequency: string }),
+  knowledge: () => api.knowledge().then((r) => r as unknown as Knowledge[]),
+  adminKnowledge: () => api.adminKnowledge().then((r) => r as unknown as Knowledge[]),
+  adminKnowledgePut: (b: Partial<Knowledge>) => api.adminKnowledgePut(b as Record<string, unknown>).then((r) => r as unknown as Knowledge),
+  adminKnowledgePatch: (id: string, b: Partial<Knowledge>) => api.adminKnowledgePatch(id, b as Record<string, unknown>).then((r) => r as unknown as Knowledge),
+  adminKnowledgeDel: (id: string) => api.adminKnowledgeDel(id),
+  adminKnowledgeSuggest: (topic: string) => api.adminKnowledgeSuggest({ topic }).then((r) => r as unknown as Knowledge),
+  adminKnowledgeConfigGet: () => api.adminKnowledgeConfigGet().then((r) => r as unknown as { frequency: string }),
+  adminKnowledgeConfigSet: (frequency: string) => api.adminKnowledgeConfigSet({ frequency }).then((r) => r as unknown as { frequency: string }),
 };
 
 export function feedBrain(text: string, source = "Growth", kind = "growth") {

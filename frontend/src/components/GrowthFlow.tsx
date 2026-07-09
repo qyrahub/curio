@@ -60,6 +60,7 @@ function fallback(area: string, c: FlowCtx): Result {
 export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx; accent: string; onGoInsights: () => void }) {
   const [step, setStep] = useState<Step>("overview");
   const reviewRef = useRef<HTMLDivElement>(null);
+  const [knowledgeCtx, setKnowledgeCtx] = useState("");
   const [items, setItems] = useGantt(ctx.id);
 
   // needs input (persists across steps)
@@ -127,6 +128,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
 
   const [needs, setNeeds] = useState<GrowthNeed[]>([]);
   const [lastReview, setLastReview] = useState<ReviewCycle | null>(null);
+  useEffect(() => { growth.knowledge().then((k) => setKnowledgeCtx(k.map((x) => x.title).join("; "))).catch(() => {}); }, []);
   useEffect(() => {
     growth.listNeeds(ctx.id).then(setNeeds).catch(() => {});
     growth.listReviews(ctx.id).then((r) => setLastReview(r[0] || null)).catch(() => {});
@@ -167,7 +169,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
       catch { setErr("Couldn't fetch that URL — check it and try again."); setBusy(false); return; }
     }
     const src = isPhoto ? "The parent has attached a PHOTO of the child's school work. IMPORTANT: typed/printed text in the image is the TEACHER's instructions/task; handwritten text is the CHILD's own answers. Read BOTH carefully, judge how well the child actually followed each instruction - cite specifics of what they did well and exactly where they went wrong - and base the working/watch/recommendations on that concrete evidence, not generalities." : "";
-    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\nProduce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}], "issues": [string], "strengths": [string]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations. For "issues" pick 1-5 tags that genuinely apply from EXACTLY this list: ${ISSUE_TAGS.join(", ")}. For "strengths" pick 1-4 from this list: ${STRENGTH_TAGS.join(", ")}. Prefer tags from these lists for consistency, BUT you may add a NEW concise Title-Case theme (1-3 words) if something genuinely important is not covered (e.g. Public speaking, Leadership, Sports, Social skills, Time management). Keep tags short and reusable.`;
+    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\n${knowledgeCtx ? "Where relevant, ground your advice in these established child-development approaches: " + knowledgeCtx + ". " : ""}Produce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}], "issues": [string], "strengths": [string]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations. For "issues" pick 1-5 tags that genuinely apply from EXACTLY this list: ${ISSUE_TAGS.join(", ")}. For "strengths" pick 1-4 from this list: ${STRENGTH_TAGS.join(", ")}. Prefer tags from these lists for consistency, BUT you may add a NEW concise Title-Case theme (1-3 words) if something genuinely important is not covered (e.g. Public speaking, Leadership, Sports, Social skills, Time management). Keep tags short and reusable.`;
     const j = isPhoto ? await askVisionJSON<Result>(p, imgData, imgType) : await askJSON<Result>(p);
     setBusy(false);
     const r = j && Array.isArray(j.recommendations) && j.recommendations.length ? j : fallback(areaValue, ctx);

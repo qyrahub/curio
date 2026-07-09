@@ -6,6 +6,7 @@ import EvolutionChart from "../components/EvolutionChart";
 import IssuesTimeline from "../components/IssuesTimeline";
 import IntelligencePanel from "../components/IntelligencePanel";
 import ProfileWheel from "../components/ProfileWheel";
+import KnowledgePanel from "../components/KnowledgePanel";
 import BenchmarkRadars from "../components/BenchmarkRadars";
 import ValueTiles from "../components/ValueTiles";
 
@@ -249,6 +250,13 @@ export default function Insights() {
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">◍</span><h2>{focus.name}'s profile wheel</h2></div>
         <ProfileWheel childId={focus.id} childName={focus.name} />
+      </section>
+
+      {/* section 0c3 — knowledge base that informs guidance */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">✽</span><h2>What informs {focus.name}'s guidance</h2></div>
+        <p className="muted" style={{ marginTop: 0 }}>Curio's recommendations are grounded in established child-development traditions — curated, and the same shared knowledge enriches every family.</p>
+        <KnowledgePanel />
       </section>
 
       {/* section 0d — benchmarking radars */}

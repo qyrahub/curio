@@ -646,6 +646,117 @@ def admin_bench_config_set(body: dict, user: dict = Depends(require_admin)) -> d
     return doc
 
 
+KNOWLEDGE_SEED = [
+    {"title": "Nurturing Early Learners (Singapore)", "tradition": "Singapore / MOE",
+     "summary": "Singapore's national early-years framework balances academic readiness with holistic social, emotional and physical development. It centres the joy of learning, purposeful play, values and social-emotional competencies, and a strong teacher-family partnership, viewing children as curious, active and competent learners.",
+     "source": "Singapore Ministry of Education / ECDA", "tags": ["holistic", "purposeful play", "social-emotional", "family partnership"]},
+    {"title": "Finnish / Nordic educare", "tradition": "Nordic / Finland",
+     "summary": "Play is treated as serious learning, with a strong emphasis on child agency, outdoor and nature-based exploration, and the whole child over academic pressure. Young children are not graded or tested; instead teachers observe, keep portfolios and reflect on each child's progress over time.",
+     "source": "Finnish National Core Curriculum; Nordic social pedagogy", "tags": ["play-based", "outdoor learning", "child agency", "observation over grading"]},
+    {"title": "Reggio Emilia approach", "tradition": "Italy",
+     "summary": "Built on the image of the child as competent, curious and capable, the hundred languages (the many ways children express understanding), and the environment as the third teacher. Documentation makes each child's growth and learning visible to the child, educators and parents.",
+     "source": "Reggio Emilia (Loris Malaguzzi)", "tags": ["image of the child", "documentation", "project-based", "environment"]},
+    {"title": "Montessori method", "tradition": "Italy / global",
+     "summary": "Self-paced mastery in a carefully prepared environment, practical-life skills that build independence, and materials sequenced from concrete to abstract with control of error so children can self-correct. Respect for the child as an individual is central.",
+     "source": "Maria Montessori", "tags": ["self-paced", "prepared environment", "independence", "self-correction"]},
+    {"title": "Executive function & serve-and-return", "tradition": "Developmental science",
+     "summary": "Executive-function and self-regulation skills (working memory, attention, inhibitory control) are not innate but are built through practice and responsive serve-and-return interaction. Early self-regulation underpins later planning, problem-solving and school success.",
+     "source": "Harvard Center on the Developing Child", "tags": ["executive function", "self-regulation", "serve and return", "attention"]},
+]
+
+
+def _seed_knowledge():
+    if not coll_list("knowledge", {}):
+        for e in KNOWLEDGE_SEED:
+            d = dict(e)
+            d.update({"id": f"kb_{uuid.uuid4().hex[:12]}", "status": "approved", "source_type": "seed",
+                      "created_at": _now(), "updated_at": _now()})
+            coll_put("knowledge", d)
+
+
+@v1.get("/knowledge")
+def knowledge_list(user: dict = Depends(get_current_user)) -> list[dict]:
+    _seed_knowledge()
+    return coll_list("knowledge", {"status": "approved"})
+
+
+@v1.get("/admin/knowledge")
+def admin_knowledge(user: dict = Depends(require_admin)) -> list[dict]:
+    _seed_knowledge()
+    return coll_list("knowledge", {})
+
+
+@v1.post("/admin/knowledge")
+def admin_knowledge_put(body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = dict(body or {})
+    if not doc.get("title") or not doc.get("summary"):
+        raise HTTPException(400, "title and summary are required")
+    doc.setdefault("id", f"kb_{uuid.uuid4().hex[:12]}")
+    doc.setdefault("status", "approved")
+    doc.setdefault("source_type", "admin")
+    doc.setdefault("tags", [])
+    doc.setdefault("created_at", _now())
+    doc["updated_at"] = _now()
+    coll_put("knowledge", doc)
+    return doc
+
+
+@v1.patch("/admin/knowledge/{kid}")
+def admin_knowledge_patch(kid: str, body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = coll_get("knowledge", {"id": kid})
+    if not doc:
+        raise HTTPException(404, "not found")
+    for k in ("title", "summary", "tradition", "source", "status", "tags"):
+        if k in (body or {}):
+            doc[k] = body[k]
+    doc["updated_at"] = _now()
+    coll_put("knowledge", doc)
+    return doc
+
+
+@v1.delete("/admin/knowledge/{kid}")
+def admin_knowledge_del(kid: str, user: dict = Depends(require_admin)) -> dict:
+    return {"deleted": coll_delete("knowledge", {"id": kid})}
+
+
+@v1.post("/admin/knowledge/suggest")
+def admin_knowledge_suggest(body: dict, user: dict = Depends(require_admin)) -> dict:
+    topic = ((body or {}).get("topic") or "").strip()
+    if not topic:
+        raise HTTPException(400, "topic is required")
+    prompt = (
+        f"Summarise the child-development approach or tradition '{topic}' for a curated knowledge base that informs "
+        f"parenting guidance. Write an ORIGINAL 2-3 sentence summary in your own words; do NOT quote copyrighted text. "
+        f'Return ONLY JSON: {{"title": string, "tradition": string, "summary": string, "tags": [string]}}'
+    )
+    reply = assistant.ask(prompt, "develop")
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {}
+    except Exception:
+        raise HTTPException(502, "could not draft a summary")
+    doc = {"id": f"kb_{uuid.uuid4().hex[:12]}", "title": data.get("title") or topic, "tradition": data.get("tradition", ""),
+           "summary": data.get("summary", ""), "source": "AI-drafted (pending review)", "tags": data.get("tags", []) or [],
+           "status": "suggested", "source_type": "ai", "created_at": _now(), "updated_at": _now()}
+    coll_put("knowledge", doc)
+    return doc
+
+
+@v1.get("/admin/knowledge/config")
+def admin_knowledge_config_get(user: dict = Depends(require_admin)) -> dict:
+    return coll_get("knowledge_config", {"id": "config"}) or {"id": "config", "frequency": "monthly"}
+
+
+@v1.post("/admin/knowledge/config")
+def admin_knowledge_config_set(body: dict, user: dict = Depends(require_admin)) -> dict:
+    freq = (body or {}).get("frequency", "monthly")
+    if freq not in BENCH_FREQS:
+        raise HTTPException(400, "invalid frequency")
+    doc = {"id": "config", "frequency": freq, "updated_at": _now()}
+    coll_put("knowledge_config", doc)
+    return doc
+
+
 @v1.post("/ask-vision")
 def ask_vision_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
     img = (body or {}).get("image") or ""
