@@ -3,6 +3,7 @@ import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES } from "../lib/profile";
 import EvolutionChart from "../components/EvolutionChart";
+import ProgressReport from "../components/ProgressReport";
 import IssuesTimeline from "../components/IssuesTimeline";
 import IntelligencePanel from "../components/IntelligencePanel";
 import ProfileWheel from "../components/ProfileWheel";
@@ -219,6 +220,13 @@ export default function Insights() {
     <div className="view ins">
       <PageHero kind="parent" eyebrow="Insights" title={<>Proof, not <em>promises</em></>}
         tease="How the whole ecosystem works, the value it's creating for your child and you, and how they're really doing — measured honestly, no marketing." />
+
+      {/* progress report — shareable child-level summary */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">⇪</span><h2>{focus.name}'s progress report</h2></div>
+        <p className="muted" style={{ marginTop: 0 }}>One honest summary to share with a teacher, partner or tutor — trajectory, strengths, watch-points and current focus, from real history.</p>
+        <ProgressReport childId={focus.id} childName={focus.name} />
+      </section>
 
       {/* section 0 — growth over time */}
       <section className="ins-sec">
