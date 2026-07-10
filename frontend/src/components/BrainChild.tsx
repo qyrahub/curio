@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { askJSON } from "../lib/ai";
 import { growth, type ReviewCycle, type GrowthNeed, type Evaluation, type Portrait } from "../lib/growth";
+import { journal, type JournalEntry } from "../lib/journal";
 import { normTag } from "../lib/themes";
 
 /* Per-child Brain: what it has absorbed (real events), the Brain's current read
@@ -16,6 +17,7 @@ export default function BrainChild({ childId, childName, childAge, accent, onGoD
   const [needs, setNeeds] = useState<GrowthNeed[]>([]);
   const [evals, setEvals] = useState<Evaluation[]>([]);
   const [portrait, setPortrait] = useState<Portrait | null>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -27,19 +29,21 @@ export default function BrainChild({ childId, childName, childAge, accent, onGoD
       growth.listNeeds(childId).then(setNeeds).catch(() => setNeeds([])),
       growth.listEvals(childId).then(setEvals).catch(() => setEvals([])),
       growth.listPortraits(childId).then((r) => setPortrait(r[0] || null)).catch(() => setPortrait(null)),
+      journal.list("child", childId).then(setJournalEntries).catch(() => setJournalEntries([])),
     ]).finally(() => setLoaded(true));
   };
   useEffect(load, [childId]);
 
-  const inputs = reviews.length + needs.length + evals.length;
+  const inputs = reviews.length + needs.length + evals.length + journalEntries.length;
 
   const absorbed = useMemo(() => {
     const items: { t: number; icon: string; label: string; sub?: string }[] = [];
     reviews.forEach((r) => items.push({ t: dt(r.created_at || r.period).getTime(), icon: "📋", label: r.summary || "Review submitted", sub: [...(r.issues || []), ...(r.strengths || [])].map(normTag).slice(0, 5).join(" · ") }));
     needs.forEach((n) => items.push({ t: dt(n.created_at).getTime(), icon: "🎯", label: `Need: ${n.title || n.area}`, sub: n.status }));
     evals.forEach((e) => items.push({ t: dt(e.created_at).getTime(), icon: "🔍", label: `Evaluated: ${e.title}`, sub: e.summary?.slice(0, 80) }));
+    journalEntries.forEach((j) => items.push({ t: dt(j.created_at).getTime(), icon: "📓", label: j.text.slice(0, 90), sub: "journal" + (j.mood ? " · " + j.mood : "") }));
     return items.sort((a, b) => b.t - a.t).slice(0, 12);
-  }, [reviews, needs, evals]);
+  }, [reviews, needs, evals, journalEntries]);
 
   const refresh = async () => {
     setBusy(true); setErr("");

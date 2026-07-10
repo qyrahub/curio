@@ -97,5 +97,9 @@ export const api = {
   adminKnowledgeSuggest: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge/suggest", { method: "POST", body: JSON.stringify(body) }),
   adminKnowledgeConfigGet: () => http<Record<string, unknown>>("/admin/knowledge/config"),
   adminKnowledgeConfigSet: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge/config", { method: "POST", body: JSON.stringify(body) }),
+  journalList: (scope?: string, childId?: string) => http<Record<string, unknown>[]>(`/journal?${new URLSearchParams({ ...(scope ? { scope } : {}), ...(childId ? { child_id: childId } : {}) }).toString()}`),
+  journalAdd: (body: Record<string, unknown>) => http<Record<string, unknown>>("/journal", { method: "POST", body: JSON.stringify(body) }),
+  journalDel: (id: string) => http<{ deleted: number }>(`/journal/${id}`, { method: "DELETE" }),
+  journalPatterns: (body: Record<string, unknown>) => http<Record<string, unknown>>("/journal/patterns", { method: "POST", body: JSON.stringify(body) }),
 };
 type EduItemList = import("../types").EduItem[];

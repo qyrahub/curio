@@ -757,6 +757,74 @@ def admin_knowledge_config_set(body: dict, user: dict = Depends(require_admin)) 
     return doc
 
 
+JOURNAL_SCOPES = {"child", "family", "general"}
+
+
+@v1.get("/journal")
+def journal_list(scope: str | None = None, child_id: str | None = None, user: dict = Depends(get_current_user)) -> list[dict]:
+    flt: dict = {"user_id": _uid(user)}
+    if scope:
+        flt["scope"] = scope
+    if child_id:
+        flt["child_id"] = child_id
+    return coll_list("journal", flt)
+
+
+@v1.post("/journal")
+def journal_put(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    uid = _uid(user)
+    b = body or {}
+    text = (b.get("text") or "").strip()
+    if not text:
+        raise HTTPException(400, "text is required")
+    scope = b.get("scope") or "family"
+    if scope not in JOURNAL_SCOPES:
+        raise HTTPException(400, "invalid scope")
+    if scope == "child" and not b.get("child_id"):
+        raise HTTPException(400, "child_id is required for child entries")
+    doc = {"id": f"jr_{uuid.uuid4().hex[:12]}", "user_id": uid, "scope": scope,
+           "child_id": b.get("child_id") if scope == "child" else "",
+           "text": text[:4000], "mood": (b.get("mood") or "")[:24],
+           "created_at": _now(), "updated_at": _now()}
+    coll_put("journal", doc)
+    return doc
+
+
+@v1.delete("/journal/{jid}")
+def journal_del(jid: str, user: dict = Depends(get_current_user)) -> dict:
+    return {"deleted": coll_delete("journal", {"user_id": _uid(user), "id": jid})}
+
+
+@v1.post("/journal/patterns")
+def journal_patterns(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    uid = _uid(user)
+    b = body or {}
+    flt: dict = {"user_id": uid}
+    if b.get("scope"):
+        flt["scope"] = b["scope"]
+    if b.get("child_id"):
+        flt["child_id"] = b["child_id"]
+    entries = sorted(coll_list("journal", flt), key=lambda e: e.get("created_at", ""))
+    if len(entries) < 2:
+        return {"summary": "Add a couple more entries and patterns will appear here.", "themes": [], "watch": []}
+    who = b.get("who") or "the child/family"
+    joined = "\n".join(f"- {(e.get('created_at') or '')[:10]}: {e.get('text', '')}" for e in entries[-40:])
+    prompt = (
+        f"You are analysing a parent's journal entries about {who} over time. Identify honest, specific patterns and "
+        f"how things are trending. Base everything ONLY on the entries; if the picture is thin, say so plainly.\n"
+        f"Entries (oldest first):\n{joined}\n"
+        f'Return ONLY JSON: {{"summary": string, "themes": [{{"theme": string, "trend": string}}], "watch": [string]}}. '
+        f"summary is 2-3 warm, plain sentences; themes are 3-6 recurring topics with a short trend note; watch is 0-3 gentle flags."
+    )
+    reply = assistant.ask(prompt, "develop")
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {}
+    except Exception:
+        return {"summary": "Could not read the patterns just now — try again.", "themes": [], "watch": []}
+    return {"summary": data.get("summary", ""), "themes": data.get("themes", []) or [], "watch": data.get("watch", []) or [], "count": len(entries)}
+
+
 @v1.post("/ask-vision")
 def ask_vision_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
     img = (body or {}).get("image") or ""

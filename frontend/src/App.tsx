@@ -21,19 +21,20 @@ import Library from "./views/Library";
 import Workbench from "./views/Workbench";
 import Brain from "./views/Brain";
 import KnowledgeCentre from "./views/KnowledgeCentre";
+import Journal from "./views/Journal";
 import Account from "./views/Account";
 
 // Menus depend on who is "wearing" the site.
 const CHILD_LINKS: [string, string][] = [
-  ["home", "Home"], ["child", "Child"], ["coach", "Coach"], ["canvas", "Canvas"], ["planner", "Planner"], ["library", "Library"], ["learn", "Knowledge"],
+  ["home", "Home"], ["child", "Child"], ["coach", "Coach"], ["canvas", "Canvas"], ["planner", "Planner"], ["journal", "Journal"], ["library", "Library"], ["learn", "Knowledge"],
 ];
 const PARENT_LINKS: [string, string][] = [
-  ["home", "Home"], ["child", "Child"], ["parent", "Parent"], ["family", "Family"], ["coach", "Coach"], ["develop", "Develop"], ["insights", "Insights"], ["brain", "Brain"], ["library", "Library"], ["learn", "Knowledge"], ["workbench", "Workbench"], ["feedback", "Feedback"],
+  ["home", "Home"], ["child", "Child"], ["parent", "Parent"], ["family", "Family"], ["coach", "Coach"], ["develop", "Develop"], ["journal", "Journal"], ["insights", "Insights"], ["brain", "Brain"], ["library", "Library"], ["learn", "Knowledge"], ["workbench", "Workbench"], ["feedback", "Feedback"],
 ];
 const ADMIN_LINKS: [string, string][] = [
   ["home", "Home"], ["intelligence", "Intelligence"], ["insights", "Insights"], ["brain", "Brain"], ["learn", "Knowledge"],
 ];
-const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "account", "settings"];
+const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "account", "settings"];
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 function firstName(user: UserPublic) {
@@ -136,6 +137,7 @@ function Shell() {
         {r === "parent" && <Parent />}
         {r === "family" && <Family />}
         {r === "planner" && <FamilyPlanner />}
+        {r === "journal" && <Journal />}
         {r === "coach" && <Athena />}
         {r === "develop" && <Develop />}
         {r === "feedback" && <Feedback user={user} />}
