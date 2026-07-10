@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio — Making a Child's Development Visible</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F2; --panel:#FFFFFF; --ink:#201D30; --ink-soft:#5C566F; --line:#E7E1D6;
+    --teal:#1FA394; --blue:#3F82C6; --coral:#E4634C; --gold:#B9822A;
+    --measure:44rem;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;font-size:19px;line-height:1.62;
+    -webkit-font-smoothing:antialiased;font-optical-sizing:auto}
+  .wrap{max-width:var(--measure);margin:0 auto;padding:0 28px}
+
+  /* three-strand spectrum signature */
+  .spectrum{height:5px;width:100%;border-radius:99px;
+    background:linear-gradient(90deg,var(--teal) 0 33.3%,var(--blue) 33.3% 66.6%,var(--coral) 66.6% 100%)}
+  .spectrum.thin{height:3px}
+
+  /* masthead */
+  header.top{padding:72px 0 34px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.72rem;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.5rem,6vw,4.1rem);
+    line-height:1.02;letter-spacing:-.015em;margin:.5rem 0 .4rem}
+  h1 em{font-style:italic;color:var(--coral);font-weight:500}
+  .dek{font-size:1.28rem;color:var(--ink-soft);max-width:38rem;margin:.2rem 0 1.7rem;line-height:1.45}
+  .byline{font-family:"JetBrains Mono",monospace;font-size:.74rem;letter-spacing:.05em;
+    color:var(--ink-soft);display:flex;gap:16px;flex-wrap:wrap;margin-top:22px}
+  .byline b{color:var(--ink);font-weight:600}
+
+  /* abstract */
+  .abstract{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:26px 30px;margin:34px 0 8px;box-shadow:0 22px 50px -40px rgba(32,29,48,.5)}
+  .abstract .lab{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--gold);font-weight:600}
+  .abstract p{margin:.6rem 0 0;font-size:1.06rem}
+
+  /* section architecture */
+  section{padding:40px 0 8px}
+  .snum{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.76rem;
+    letter-spacing:.14em;color:var(--ink-soft)}
+  .snum b{color:var(--teal)}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.7rem,3.6vw,2.3rem);
+    letter-spacing:-.01em;line-height:1.1;margin:.35rem 0 .2rem}
+  h2 + .spectrum.thin{max-width:88px;margin:.5rem 0 1.1rem}
+  h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.24rem;margin:1.7rem 0 .3rem}
+  p{margin:0 0 1.05rem}
+  a{color:var(--blue)}
+  strong{font-weight:600}
+  .lead::first-letter{font-family:"Fraunces",serif;font-weight:600;float:left;
+    font-size:3.5rem;line-height:.8;padding:.06em .12em 0 0;color:var(--coral)}
+
+  /* pull principle */
+  .principle{border-left:3px solid var(--gold);padding:2px 0 2px 22px;margin:1.7rem 0;
+    font-family:"Fraunces",serif;font-size:1.34rem;font-style:italic;line-height:1.34;color:var(--ink)}
+
+  /* the five inputs / three bases as mono chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:1rem 0 1.3rem}
+  .chip{font-family:"JetBrains Mono",monospace;font-size:.76rem;font-weight:600;
+    border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:7px 13px;color:var(--ink)}
+  .chip .d{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
+
+  /* three-basis cards */
+  .bases{display:grid;grid-template-columns:1fr;gap:14px;margin:1.2rem 0 1.4rem}
+  @media(min-width:680px){.bases{grid-template-columns:repeat(3,1fr)}}
+  .basis{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .basis::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
+  .basis.t::before{background:var(--teal)} .basis.b::before{background:var(--blue)} .basis.c::before{background:var(--coral)}
+  .basis h4{font-family:"Fraunces",serif;font-size:1.08rem;margin:.4rem 0 .3rem}
+  .basis p{font-size:.94rem;color:var(--ink-soft);margin:0}
+
+  /* ladder */
+  .ladder{list-style:none;padding:0;margin:1.1rem 0 1.3rem;counter-reset:rung}
+  .ladder li{position:relative;padding:12px 0 12px 46px;border-bottom:1px dashed var(--line)}
+  .ladder li:last-child{border-bottom:0}
+  .ladder li::before{counter-increment:rung;content:counter(rung);position:absolute;left:0;top:11px;
+    width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--paper);
+    font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.85rem;display:grid;place-items:center}
+  .ladder li b{font-weight:600}
+
+  /* honesty ledger */
+  .ledger{background:#201D30;color:#F3EFE7;border-radius:14px;padding:26px 30px;margin:1.4rem 0}
+  .ledger .lab{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.2em;
+    text-transform:uppercase;color:#C9A24B;font-weight:600;margin-bottom:.6rem}
+  .ledger ul{margin:.2rem 0 0;padding:0;list-style:none}
+  .ledger li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09);font-size:1rem;display:flex;gap:12px}
+  .ledger li:last-child{border-bottom:0}
+  .ledger li .k{color:#8FE0B4;font-family:"JetBrains Mono",monospace;font-size:.85rem;flex:none;width:118px;font-weight:600}
+
+  /* traditions strip */
+  .trad{display:grid;grid-template-columns:1fr;gap:10px;margin:1.1rem 0 1.3rem}
+  @media(min-width:640px){.trad{grid-template-columns:1fr 1fr}}
+  .trad .t{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .trad .t .o{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--blue);font-weight:600}
+  .trad .t h4{font-family:"Fraunces",serif;font-size:1.02rem;margin:.25rem 0 .2rem}
+  .trad .t p{font-size:.9rem;color:var(--ink-soft);margin:0}
+
+  footer{padding:44px 0 70px;color:var(--ink-soft);font-size:.9rem}
+  footer .spectrum{margin-bottom:20px}
+  .note{font-size:.86rem;color:var(--ink-soft);font-style:italic}
+
+  @media (prefers-reduced-motion:no-preference){
+    section,.abstract{opacity:0;transform:translateY(14px);animation:rise .7s ease forwards}
+    section{animation-delay:.05s}
+  }
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  @media print{
+    body{font-size:11pt;background:#fff}
+    section,.abstract{opacity:1;transform:none;animation:none}
+    .ledger{background:#fff;color:#000;border:1.5px solid #000}
+    .ledger .k{color:#000}.ledger li{border-color:#ccc}
+    .abstract,.basis,.trad .t,.chip{box-shadow:none}
+    a{color:#000;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="spectrum"></div>
+    <div class="eyebrow" style="margin-top:24px">Curio · Working Paper · Develop Module</div>
+    <h1>Making a child's<br>development <em>visible</em></h1>
+    <p class="dek">How the Develop module takes a real need, assesses it honestly, and turns it into a development ladder a family can watch grow — or notice stalling — over time.</p>
+    <div class="byline">
+      <span><b>Domain</b> — child learning &amp; development</span>
+      <span><b>Audience</b> — parents &amp; families</span>
+      <span><b>Stance</b> — guidance, not diagnosis</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="abstract">
+    <div class="lab">Abstract</div>
+    <p>A child's development is continuous, but to a parent it is largely invisible — glimpsed in a worksheet here, a hard evening there, rarely assembled into a picture. Curio's Develop module turns those scattered moments into a structured, dated record; assesses each against the child's own history, established developmental traditions, and the science of self-regulation — never against invented percentiles; and renders the whole trajectory so that growth, or its absence, becomes something a family can actually see. This paper describes how it works, end to end, and the epistemic commitments that keep it honest.</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="snum"><b>01</b> / The problem</div>
+    <h2>Development is continuous. To a parent, it is invisible.</h2>
+    <div class="spectrum thin"></div>
+    <p class="lead">Every child is developing all the time — but the evidence arrives in fragments. A comprehension worksheet comes home marked. A homework session ends in tears. A teacher mentions, in passing, that instructions get lost. Each fragment is real, and each is quickly forgotten. What no parent has is the assembled view: the pattern across months, the thing that keeps recurring, the quiet improvement that no single evening reveals.</p>
+    <p>Curio's premise is that the fragments are enough — if you capture them faithfully, tag them consistently, and lay them along a timeline. The work is not to test the child, but to <strong>make what is already happening visible</strong>, and to keep the family deliberate about it.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>02</b> / Intake</div>
+    <h2>Taking in a need — specific or general</h2>
+    <div class="spectrum thin"></div>
+    <p>A parent begins a need in whichever form fits the moment. The module handles the pointed and the vague equally: <em>"check what's wrong with how she followed these instructions"</em> is as workable as <em>"he can't sit still for homework, we end up in tears every evening."</em> Five ways in:</p>
+    <div class="chips">
+      <span class="chip"><span class="d" style="background:var(--teal)"></span>Type it</span>
+      <span class="chip"><span class="d" style="background:var(--blue)"></span>Paste a URL</span>
+      <span class="chip"><span class="d" style="background:var(--coral)"></span>Photograph the work</span>
+      <span class="chip"><span class="d" style="background:var(--gold)"></span>Upload a file (PDF / Word / text)</span>
+      <span class="chip"><span class="d" style="background:var(--teal)"></span>Dictate by voice</span>
+    </div>
+    <p>When a photograph of schoolwork is used, the analysis is told what it is looking at — printed text is the teacher's instruction, handwriting is the child's answer — and it judges how well the child followed each instruction, citing specifics rather than generalities. An optional <strong>Deep Thinking</strong> mode asks a few clarifying questions first, grounded in what is actually on the page.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>03</b> / Assessment</div>
+    <h2>What it assesses against</h2>
+    <div class="spectrum thin"></div>
+    <p>This is where most "assessment tools" quietly overreach. Curio assesses on three honest bases — and refuses a fourth.</p>
+    <div class="bases">
+      <div class="basis t">
+        <h4>The child's own context</h4>
+        <p>Their interests, strengths, struggles, and prior history — so guidance is tailored to <em>this</em> child, not a generic one.</p>
+      </div>
+      <div class="basis b">
+        <h4>The material itself</h4>
+        <p>The specific worksheet, text, or situation submitted — read closely for what the child actually did.</p>
+      </div>
+      <div class="basis c">
+        <h4>Established practice</h4>
+        <p>A curated knowledge base of developmental traditions and the science of self-regulation (§08).</p>
+      </div>
+    </div>
+    <p class="principle">What it will not do is score a child against a scraped population percentile — because that data does not exist in a trustworthy form, and a fabricated number about a real child is worse than no number at all.</p>
+    <p>Where a benchmark is shown at all, it is an <strong>admin-approved "typical-for-age" reference</strong>, not a measured ranking: a human approves it before a parent ever sees it, and the model may only <em>propose</em> values pending that approval. Everything is framed as guidance, never diagnosis.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>04</b> / The record</div>
+    <h2>From judgement to a durable, comparable record</h2>
+    <div class="spectrum thin"></div>
+    <p>Each analysis returns a structured Review: a plain-language summary; what is <span style="color:var(--teal)"><strong>working</strong></span> and what to <span style="color:var(--coral)"><strong>watch</strong></span>, each with its implication; and four to six concrete recommendations. Crucially, it also tags the review against a <strong>fixed canonical vocabulary</strong> — spelling, focus &amp; attention, comprehension, following instructions, and so on — and may propose <strong>new themes</strong> (public speaking, leadership) when the fixed set doesn't cover something real.</p>
+    <p>On submission, the whole thing is saved durably, per child, with a <strong>date</strong> and a <strong>scores snapshot</strong>. That consistency is deliberate: fixed tags are what make recurrence detectable and trends comparable across months. Free-form notes drift; a shared vocabulary accumulates into evidence.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>05</b> / The ladder</div>
+    <h2>Turning a need into a development ladder</h2>
+    <div class="spectrum thin"></div>
+    <p>Advice that isn't acted on evaporates. Selected recommendations become tracked plan items with durations, so a need becomes a concrete, time-boxed plan — and each submitted cycle adds another dated rung:</p>
+    <ol class="ladder">
+      <li><b>Understand</b> — where the child is, in their own terms.</li>
+      <li><b>Name the need</b> — specific or general, in any of five forms.</li>
+      <li><b>Review</b> — strengths, watch-points, and recommendations, tagged.</li>
+      <li><b>Plan</b> — chosen recommendations become tracked, time-boxed steps.</li>
+      <li><b>Submit</b> — a dated snapshot enters the record and the Brain.</li>
+      <li><b>Return</b> — the next cycle builds on the last; the ladder rises.</li>
+    </ol>
+    <p>This mirrors a principle Montessori practitioners would recognise — self-paced mastery with built-in self-correction — and one the Nordic tradition insists on: progress is <em>observed over time</em>, not stamped with a grade.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>06</b> / Memory</div>
+    <h2>The Brain — a per-child memory that gets sharper</h2>
+    <div class="spectrum thin"></div>
+    <p>Everything a child accumulates feeds a per-child Brain, presented to parents in three honest layers. First, <strong>what it has absorbed</strong>: a real, dated feed of reviews, needs, and evaluations — events, not inventions. Second, <strong>its current read</strong>: an AI-written portrait built <em>only</em> from that history, refreshable, and plainly labelled as an inference rather than a fact or a diagnosis; when the history is thin, it says so instead of confabulating. Third, <strong>how it shapes guidance</strong>: the read is what the next round of recommendations builds on.</p>
+    <p>The effect is that the promise "it gets sharper every week" stops being a slogan a parent must take on faith, and becomes something they can watch happen.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>07</b> / Visibility</div>
+    <h2>Tracking growth — or its absence — over time</h2>
+    <div class="spectrum thin"></div>
+    <p>Because every review is dated and tagged, the trajectory can be rendered honestly. The Insights view assembles several lenses on the same real history:</p>
+    <h3>Growth over time</h3>
+    <p>Each discipline plotted across the actual review dates — an upward line means measured improvement, because the points are the child's own.</p>
+    <h3>Issues over time</h3>
+    <p>When each tagged issue appeared, with a recurrence badge when it keeps returning. A pattern that will not resolve is the clearest signal that something needs a different approach — the honest face of <em>lack</em> of growth.</p>
+    <h3>The bigger picture, ranked</h3>
+    <p>Issues and strengths ranked by impact, with a time-scrubber to see the picture as it stood at any earlier point — and a <strong>profile wheel</strong> that groups the child's themes into cognitive, school, and focus sectors.</p>
+    <h3>Benchmarking radars</h3>
+    <p>The child against a typical-for-age reference, against their own country's reference, and — fully real — <strong>against their own earlier self</strong>. Themes without an approved benchmark are shown level with the child, never as a fabricated gap.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>08</b> / Lineage</div>
+    <h2>What informs the guidance</h2>
+    <div class="spectrum thin"></div>
+    <p>Curio's recommendations are not improvised. They are grounded in a curated knowledge base of established developmental traditions — original, attributed summaries that an administrator reviews and approves, refreshed on a schedule, and shared so the same knowledge enriches every family. The founding set:</p>
+    <div class="trad">
+      <div class="t"><div class="o">Singapore · MOE</div><h4>Nurturing Early Learners</h4><p>Holistic development, purposeful play, and strong family partnership; the child as a curious, competent learner.</p></div>
+      <div class="t"><div class="o">Nordic · Finland</div><h4>Educare</h4><p>Play as serious learning, child agency, and progress observed over time rather than graded.</p></div>
+      <div class="t"><div class="o">Italy</div><h4>Reggio Emilia</h4><p>The image of the capable child, the hundred languages, and documentation that makes learning visible.</p></div>
+      <div class="t"><div class="o">Italy · Global</div><h4>Montessori</h4><p>Self-paced mastery in a prepared environment, with materials built for self-correction.</p></div>
+      <div class="t" style="grid-column:1/-1"><div class="o">Developmental science</div><h4>Executive function &amp; serve-and-return</h4><p>Working memory, attention, and inhibitory control are built through practice and responsive interaction — validating Curio's core themes of focus, working memory, and self-regulation.</p></div>
+    </div>
+    <p class="note">Summaries are original and attributed; no copyrighted source text is reproduced or stored. New entries are AI-drafted <em>pending human approval</em>, never published automatically.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>09</b> / The family</div>
+    <h2>The family dividend</h2>
+    <div class="spectrum thin"></div>
+    <p>The point is not a prettier report; it is a calmer, more capable family. A parent gains a <strong>shared language</strong> for what their child is working through, and a place where a stressful evening becomes a data point rather than a defeat. The invisible becomes discussable: siblings can be understood on their own terms rather than compared; a partner, a grandparent, or a tutor can be handed the same honest picture instead of a second-hand worry.</p>
+    <p>Because progress is observed rather than graded, the tool lowers the temperature — it replaces the anxiety of "is my child behind?" with the steadier question "what are we working on, and is it moving?" And because the guidance is grounded in generations of established practice, a parent acting on it is drawing, quietly, on the same wisdom a good early-years educator would — without needing to have read any of it.</p>
+    <p class="principle">A child is not measured here. A child is witnessed — carefully, over time, and in the company of the people who love them.</p>
+  </section>
+
+  <section>
+    <div class="snum"><b>10</b> / Commitments</div>
+    <h2>Epistemic commitments</h2>
+    <div class="spectrum thin"></div>
+    <p>What separates this from a plausible-looking dashboard is a small set of rules the system will not break:</p>
+    <div class="ledger">
+      <div class="lab">The honesty ledger</div>
+      <ul>
+        <li><span class="k">Real only</span><span>Levels and trends are computed from the child's own dated history — never seeded or simulated.</span></li>
+        <li><span class="k">No percentiles</span><span>Benchmarks are human-approved "typical-for-age" references, not invented population rankings.</span></li>
+        <li><span class="k">Labelled inference</span><span>The Brain's portrait is clearly an inference from history — not a fact, not a diagnosis.</span></li>
+        <li><span class="k">Honest gaps</span><span>Thin data says "still learning"; missing benchmarks show no gap rather than a false one.</span></li>
+        <li><span class="k">Human in the loop</span><span>AI may propose benchmarks and knowledge; a person approves before any of it reaches a parent.</span></li>
+        <li><span class="k">Not clinical</span><span>Curio is guidance and tracking — valuable for patterns and deliberateness, not a substitute for professional evaluation.</span></li>
+      </ul>
+    </div>
+    <p>These are what let a parent trust that an upward line means real progress — and that a flat or recurring one means something genuinely worth attention.</p>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="spectrum"></div>
+    <p style="font-family:'Fraunces',serif;font-size:1.15rem;color:var(--ink);margin-bottom:.4rem">Curio — a cockpit for each child.</p>
+    <p>Develop module · take a need, assess it honestly, build a development ladder, and watch a child grow over time. This paper describes the system as built; it is guidance for families, not a clinical instrument.</p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio — How a child's growth becomes visible</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#151327; --bg2:#1C1935; --panel:#211D3D; --line:rgba(255,255,255,.09);
+    --ink:#F3EFE7; --soft:#A7A1C2; --teal:#2EC4B6; --blue:#5AA7E6; --coral:#FF7A66; --gold:#E4B34A;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:
+      radial-gradient(1100px 600px at 78% -8%,rgba(46,196,182,.10),transparent 60%),
+      radial-gradient(900px 520px at 10% 4%,rgba(255,122,102,.09),transparent 55%),
+      var(--bg);
+    color:var(--ink);font-family:"Newsreader",Georgia,serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 26px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.7rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--soft)}
+  .spectrum{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--teal) 0 33.3%,var(--blue) 33.3% 66.6%,var(--coral) 66.6%)}
+
+  /* hero */
+  header{padding:66px 0 30px}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.4rem,6.2vw,4.3rem);line-height:1.02;
+    letter-spacing:-.015em;margin:18px 0 12px}
+  h1 em{font-style:italic;color:var(--teal);font-weight:500}
+  .sub{font-size:1.2rem;color:var(--soft);max-width:40rem;line-height:1.5;margin:0 0 26px}
+  .hero-chart{background:linear-gradient(180deg,var(--bg2),var(--panel));border:1px solid var(--line);
+    border-radius:20px;padding:22px 24px 12px;box-shadow:0 40px 90px -60px #000}
+  .hero-chart .cap{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .hero-chart .cap h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.05rem;margin:0}
+  .legend{display:flex;gap:16px;flex-wrap:wrap}
+  .legend span{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--soft);display:flex;align-items:center;gap:6px}
+  .legend i{width:20px;height:3px;border-radius:2px;display:inline-block}
+
+  /* section frame */
+  .sec-h{display:flex;align-items:center;gap:14px;margin:56px 0 6px}
+  .sec-h .n{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:.8rem;color:var(--gold);
+    border:1px solid var(--line);border-radius:8px;padding:5px 9px}
+  .sec-h h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0;letter-spacing:-.01em}
+  .sec-sub{color:var(--soft);max-width:44rem;margin:2px 0 22px;font-size:1.02rem}
+
+  /* journey flow */
+  .flow{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:720px){.flow{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:980px){.flow{grid-template-columns:repeat(4,1fr)}}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+  .step::before{content:"";position:absolute;inset:0 auto 0 0;width:4px}
+  .step.s1::before{background:var(--teal)} .step.s2::before{background:var(--blue)}
+  .step.s3::before{background:var(--coral)} .step.s4::before{background:var(--gold)}
+  .step .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;margin-bottom:12px;
+    background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  .step .st{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+  .step h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.12rem;margin:3px 0 6px}
+  .step p{margin:0;font-size:.92rem;color:var(--soft);line-height:1.45}
+  .step .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+  .step .tag{font-family:"JetBrains Mono",monospace;font-size:.66rem;color:var(--ink);
+    background:rgba(255,255,255,.06);border-radius:99px;padding:4px 9px}
+  svg.i{width:22px;height:22px;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+  /* two-up feature (brain + insights) */
+  .duo{display:grid;grid-template-columns:1fr;gap:16px;margin-top:4px}
+  @media(min-width:840px){.duo{grid-template-columns:1fr 1fr}}
+  .feat{background:linear-gradient(180deg,var(--bg2),var(--panel));border:1px solid var(--line);border-radius:18px;padding:22px 24px}
+  .feat h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.25rem;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .feat .layers{list-style:none;margin:12px 0 0;padding:0}
+  .feat .layers li{padding:9px 0;border-bottom:1px solid var(--line);font-size:.95rem;display:flex;gap:11px}
+  .feat .layers li:last-child{border-bottom:0}
+  .feat .layers b{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--teal);flex:none;width:82px;padding-top:2px;font-weight:600}
+  /* mini wheel */
+  .mini-wheel{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .mini-wheel .rows{flex:1;min-width:160px}
+  .mrow{display:flex;align-items:center;gap:10px;margin:7px 0}
+  .mrow .lab{font-size:.82rem;color:var(--soft);width:96px;flex:none}
+  .mbar{flex:1;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+  .mbar i{display:block;height:100%;border-radius:99px}
+
+  /* grounded band */
+  .ground{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-top:6px}
+  .ground .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+  @media(min-width:640px){.ground .grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:980px){.ground .grid{grid-template-columns:repeat(5,1fr)}}
+  .trad{text-align:left}
+  .trad .badge{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;margin-bottom:9px;
+    background:rgba(255,255,255,.05);border:1px solid var(--line);font-family:"JetBrains Mono",monospace;font-weight:700;font-size:.9rem}
+  .trad .o{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}
+  .trad h5{font-family:"Fraunces",serif;font-weight:600;font-size:.98rem;margin:3px 0 4px}
+  .trad p{margin:0;font-size:.82rem;color:var(--soft);line-height:1.4}
+
+  /* honesty strip */
+  .honesty{margin-top:52px;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .honesty .top{background:linear-gradient(90deg,rgba(46,196,182,.16),rgba(255,122,102,.14));
+    padding:18px 26px;display:flex;align-items:center;gap:14px}
+  .honesty .top h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.5rem;margin:0}
+  .honesty .grid{display:grid;grid-template-columns:1fr;gap:0}
+  @media(min-width:720px){.honesty .grid{grid-template-columns:1fr 1fr}}
+  .hcell{padding:16px 26px;border-top:1px solid var(--line)}
+  @media(min-width:720px){.hcell:nth-child(even){border-left:1px solid var(--line)}}
+  .hcell .k{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.06em;color:var(--gold);font-weight:600}
+  .hcell p{margin:4px 0 0;font-size:.92rem;color:var(--ink)}
+
+  footer{padding:46px 0 64px;color:var(--soft);text-align:center}
+  footer .big{font-family:"Fraunces",serif;font-style:italic;font-size:1.5rem;color:var(--ink);margin:18px 0 6px}
+
+  /* reveal */
+  @media (prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.in{opacity:1;transform:none}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}
+    .draw.go{animation:draw 1.6s ease forwards}
+  }
+  @keyframes draw{to{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="spectrum" style="max-width:120px"></div>
+    <div class="eyebrow" style="margin-top:20px">Curio · Develop</div>
+    <h1>How a child's growth<br>becomes <em>visible</em></h1>
+    <p class="sub">Take a real need. Assess it honestly. Build a development ladder. Watch a child grow — or notice when they're not — over time.</p>
+
+    <div class="hero-chart reveal">
+      <div class="cap">
+        <h3>Growth over time — the three developmental strands</h3>
+        <div class="legend">
+          <span><i style="background:var(--teal)"></i>Cognitive</span>
+          <span><i style="background:var(--blue)"></i>School</span>
+          <span><i style="background:var(--coral)"></i>Focus areas</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 900 260" width="100%" style="display:block" role="img" aria-label="Three rising growth curves over time">
+        <!-- grid -->
+        <g stroke="rgba(255,255,255,.07)" stroke-width="1">
+          <line x1="40" y1="40" x2="880" y2="40"/><line x1="40" y1="100" x2="880" y2="100"/>
+          <line x1="40" y1="160" x2="880" y2="160"/><line x1="40" y1="220" x2="880" y2="220"/>
+        </g>
+        <g fill="var(--soft)" font-family="JetBrains Mono, monospace" font-size="11">
+          <text x="120" y="245">Jan</text><text x="330" y="245">Mar</text><text x="540" y="245">May</text><text x="740" y="245">Jul</text>
+        </g>
+        <!-- curves -->
+        <path class="draw" pathLength="1" d="M60,196 C220,182 300,150 430,132 S680,86 860,60" fill="none" stroke="var(--teal)" stroke-width="3.5"/>
+        <path class="draw" pathLength="1" d="M60,208 C240,200 320,176 460,150 S700,120 860,98" fill="none" stroke="var(--blue)" stroke-width="3.5"/>
+        <path class="draw" pathLength="1" d="M60,214 C230,214 340,206 470,196 S690,150 860,150" fill="none" stroke="var(--coral)" stroke-width="3.5"/>
+        <!-- review points -->
+        <g>
+          <circle cx="120" cy="192" r="4.5" fill="var(--teal)"/><circle cx="430" cy="132" r="4.5" fill="var(--teal)"/><circle cx="740" cy="76" r="4.5" fill="var(--teal)"/>
+          <circle cx="120" cy="205" r="4.5" fill="var(--blue)"/><circle cx="460" cy="150" r="4.5" fill="var(--blue)"/><circle cx="740" cy="110" r="4.5" fill="var(--blue)"/>
+          <circle cx="120" cy="213" r="4.5" fill="var(--coral)"/><circle cx="470" cy="196" r="4.5" fill="var(--coral)"/><circle cx="740" cy="152" r="4.5" fill="var(--coral)"/>
+        </g>
+      </svg>
+      <p class="mono" style="font-size:.7rem;color:var(--soft);margin:2px 4px 8px">Each dot is a real submitted review. Lines are drawn from the child's own dated history — never seeded.</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="sec-h reveal"><span class="n">A</span><h2>The journey of a single need</h2></div>
+  <p class="sec-sub reveal">From a stressful evening or a marked worksheet to a tracked, comparable rung on the ladder.</p>
+
+  <div class="flow">
+    <div class="step s1 reveal">
+      <div class="ic"><svg class="i" viewBox="0 0 24 24" stroke="var(--teal)"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+      <div class="st">Step 01 · Intake</div>
+      <h4>Name the need</h4>
+      <p>Specific or general — captured five ways.</p>
+      <div class="tags"><span class="tag">Type</span><span class="tag">URL</span><span class="tag">Photo</span><span class="tag">File</span><span class="tag">Voice</span></div>
+    </div>
+    <div class="step s2 reveal">
+      <div class="ic"><svg class="i" viewBox="0 0 24 24" stroke="var(--blue)"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <div class="st">Step 02 · Assess</div>
+      <h4>Against what's real</h4>
+      <p>The child's history, the material itself, and established practice.</p>
+      <div class="tags"><span class="tag">no invented percentiles</span></div>
+    </div>
+    <div class="step s3 reveal">
+      <div class="ic"><svg class="i" viewBox="0 0 24 24" stroke="var(--coral)"><path d="M20 12V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6"/><path d="M8 9h8M8 13h5"/><circle cx="17.5" cy="17.5" r="3.2"/></svg></div>
+      <div class="st">Step 03 · Record</div>
+      <h4>Tag &amp; date it</h4>
+      <p>Summary, strengths, watch-points and canonical tags — saved with a dated snapshot.</p>
+    </div>
+    <div class="step s4 reveal">
+      <div class="ic"><svg class="i" viewBox="0 0 24 24" stroke="var(--gold)"><path d="M6 20V4M18 20V4"/><path d="M6 8h12M6 12h12M6 16h12"/></svg></div>
+      <div class="st">Step 04 · Ladder</div>
+      <h4>Turn it into a plan</h4>
+      <p>Recommendations become tracked, time-boxed steps. Each cycle adds a rung.</p>
+    </div>
+  </div>
+
+  <div class="sec-h reveal"><span class="n">B</span><h2>What it builds up to</h2></div>
+  <p class="sec-sub reveal">Every dated, tagged review feeds two things: a memory that sharpens, and a picture of the whole trajectory.</p>
+
+  <div class="duo">
+    <div class="feat reveal">
+      <h3><svg class="i" viewBox="0 0 24 24" stroke="var(--teal)" style="width:24px;height:24px"><path d="M12 5a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 0 3 3 0 0 0 2-5 3 3 0 0 0-2-5 3 3 0 0 0-3-3Z"/><path d="M12 5v14"/></svg> The Brain</h3>
+      <p style="color:var(--soft);margin:2px 0 0;font-size:.95rem">A per-child memory a parent can watch learn.</p>
+      <ul class="layers">
+        <li><b>Absorbed</b><span>A real, dated feed of everything that's flowed in.</span></li>
+        <li><b>Reads</b><span>An AI portrait built only from that history — labelled an inference, not a diagnosis.</span></li>
+        <li><b>Shapes</b><span>That read is what the next recommendations build on.</span></li>
+      </ul>
+    </div>
+    <div class="feat reveal">
+      <h3><svg class="i" viewBox="0 0 24 24" stroke="var(--coral)" style="width:24px;height:24px"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg> Insights over time</h3>
+      <p style="color:var(--soft);margin:2px 0 0;font-size:.95rem">The trajectory, ranked and rendered.</p>
+      <div class="mini-wheel" style="margin-top:14px">
+        <div class="rows" style="width:100%">
+          <div class="mrow"><span class="lab">Focus &amp; attention</span><span class="mbar"><i style="width:72%;background:var(--teal)"></i></span></div>
+          <div class="mrow"><span class="lab">Comprehension</span><span class="mbar"><i style="width:58%;background:var(--blue)"></i></span></div>
+          <div class="mrow"><span class="lab">Curiosity</span><span class="mbar"><i style="width:84%;background:var(--coral)"></i></span></div>
+          <div class="mrow"><span class="lab">Following steps</span><span class="mbar"><i style="width:46%;background:var(--gold)"></i></span></div>
+        </div>
+      </div>
+      <p class="mono" style="font-size:.68rem;color:var(--soft);margin:12px 0 0">Growth curve · issues &amp; recurrence · ranked intelligence · profile wheel · child-vs-own-past radar</p>
+    </div>
+  </div>
+
+  <div class="sec-h reveal"><span class="n">C</span><h2>Grounded in established practice</h2></div>
+  <p class="sec-sub reveal">A curated, admin-approved knowledge base — original summaries, no scraped text — that enriches guidance for every family.</p>
+
+  <div class="ground reveal">
+    <div class="grid">
+      <div class="trad"><div class="badge" style="color:var(--teal)">SG</div><div class="o">Singapore</div><h5>Nurturing Early Learners</h5><p>Holistic, play-based, family partnership.</p></div>
+      <div class="trad"><div class="badge" style="color:var(--blue)">FI</div><div class="o">Nordic</div><h5>Educare</h5><p>Play as learning; observed, not graded.</p></div>
+      <div class="trad"><div class="badge" style="color:var(--coral)">IT</div><div class="o">Italy</div><h5>Reggio Emilia</h5><p>The capable child; learning made visible.</p></div>
+      <div class="trad"><div class="badge" style="color:var(--gold)">MO</div><div class="o">Global</div><h5>Montessori</h5><p>Self-paced mastery; self-correction.</p></div>
+      <div class="trad"><div class="badge" style="color:var(--ink)">EF</div><div class="o">Science</div><h5>Executive function</h5><p>Focus &amp; self-regulation, built by practice.</p></div>
+    </div>
+  </div>
+
+  <div class="sec-h reveal"><span class="n">D</span><h2>The family dividend</h2></div>
+  <p class="sec-sub reveal">Not a prettier report — a calmer, more capable family: a shared language for a child's growth, and a place where a hard evening becomes a data point rather than a defeat. The anxious "is my child behind?" becomes the steadier "what are we working on, and is it moving?"</p>
+
+  <div class="honesty reveal">
+    <div class="top">
+      <svg class="i" viewBox="0 0 24 24" stroke="var(--gold)" style="width:26px;height:26px"><path d="M12 3l7 4v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V7Z"/><path d="m9 12 2 2 4-4"/></svg>
+      <h2>Honest by design</h2>
+    </div>
+    <div class="grid">
+      <div class="hcell"><div class="k">REAL ONLY</div><p>Levels and trends come from the child's own dated history — never seeded or simulated.</p></div>
+      <div class="hcell"><div class="k">NO PERCENTILES</div><p>Benchmarks are human-approved "typical-for-age" references, not invented rankings.</p></div>
+      <div class="hcell"><div class="k">LABELLED INFERENCE</div><p>The Brain's portrait is clearly an inference — not a fact, and not a diagnosis.</p></div>
+      <div class="hcell"><div class="k">HUMAN IN THE LOOP</div><p>AI may propose benchmarks and knowledge; a person approves before a parent sees it.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="spectrum" style="max-width:120px;margin:0 auto"></div>
+    <p class="big">A child is not measured here — a child is witnessed.</p>
+    <p class="mono" style="font-size:.72rem">Curio · Develop · guidance for families, not a clinical instrument</p>
+  </div>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');
+    e.target.querySelectorAll?.('.draw').forEach(d=>d.classList.add('go'));e.target.classList.contains('draw')&&e.target.classList.add('go');io.unobserve(e.target);}})},{threshold:.18});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // kick the hero curves on load
+  window.addEventListener('load',()=>document.querySelectorAll('.hero-chart .draw').forEach(d=>d.classList.add('go')));
+</script>
+</body>
+</html>
