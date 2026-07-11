@@ -19,7 +19,13 @@ export type Mode = "child" | "parent" | "admin";
 export interface ChildProfile {
   id: string; name: string; age: number;
   gender: "girl" | "boy" | "other"; theme: ThemeKey; interests: string[]; country?: string;
-  outcomes?: string[]; // declared nurture focus — parent's intent, not observed
+  outcomes?: string[];        // declared nurture focus — parent's intent
+  personality?: string[];     // traits ("Curious", "Sensitive"…)
+  preferences?: string[];     // engagement/learning styles ("Learns visually"…)
+  dislikes?: string[];        // friction points ("Loud noises"…)
+  needs?: string[];           // support/accommodations ("Movement breaks"…)
+  priorityAreas?: string[];   // current focus areas ("Homework habits"…)
+  history?: string;           // free-form past context / notes
   displayMode?: "light" | "dark" | "system";
 }
 export interface AgeBand { min: number; max: number; label: string; }

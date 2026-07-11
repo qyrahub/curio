@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
-import { INTERESTS, OUTCOMES, COUNTRIES } from "../lib/options";
+import { INTERESTS, OUTCOMES, COUNTRIES, PERSONALITIES, PREFERENCES, DISLIKES, SUPPORT_NEEDS, PRIORITY_AREAS } from "../lib/options";
 import type { UserPublic } from "../types";
 
 /* Curio · Settings — the single home for accounts, access, security, rights,
@@ -26,6 +26,8 @@ const emptyNewUser = () => ({
   name: "", email: "", role: "child" as Role, username: "", password: "",
   age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "",
   interests: [] as string[], nurture: [] as string[],
+  personality: [] as string[], preferences: [] as string[], dislikes: [] as string[],
+  needs: [] as string[], priorityAreas: [] as string[], history: "",
 });
 interface AcctSec { locked: boolean; vacation: { start: string; end: string } | null; }
 interface Guardian { id: string; name: string; email: string; role: "parent" | "guardian"; modules: string[]; canEditAccount: boolean; }
@@ -113,6 +115,12 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
         country: nu.country.trim() || undefined,
         interests: nu.interests.length ? nu.interests : nc.interests,
         outcomes: nu.nurture.length ? nu.nurture : undefined,
+        personality: nu.personality.length ? nu.personality : undefined,
+        preferences: nu.preferences.length ? nu.preferences : undefined,
+        dislikes: nu.dislikes.length ? nu.dislikes : undefined,
+        needs: nu.needs.length ? nu.needs : undefined,
+        priorityAreas: nu.priorityAreas.length ? nu.priorityAreas : undefined,
+        history: nu.history.trim() || undefined,
       });
     } else {
       setExtra((a) => [...a, {
@@ -275,6 +283,44 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
                     })}
                   </div>
                 </div>
+                <details style={{ marginTop: 14 }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 700 }}>More about them <span className="muted" style={{ fontWeight: 500, fontSize: ".82rem" }}>· optional · seeds Brain, Insights, nudges &amp; reports</span></summary>
+                  <p className="muted" style={{ fontSize: ".82rem", marginTop: 8, marginBottom: 12 }}>All optional. These are your best read now — you can edit them later per-child under Develop → ⚙. The Brain treats every field here as parent intent, never as observed evidence.</p>
+
+                  {([
+                    ["Personality", PERSONALITIES as readonly string[], "personality" as const, "How you'd describe their character."],
+                    ["Preferences", PREFERENCES as readonly string[], "preferences" as const, "How they like to learn and engage."],
+                    ["Dislikes", DISLIKES as readonly string[], "dislikes" as const, "Common friction points — non-judgmental, just useful for the Brain to know."],
+                    ["Support needs", SUPPORT_NEEDS as readonly string[], "needs" as const, "What tends to help them do their best work."],
+                    ["Priority areas", PRIORITY_AREAS as readonly string[], "priorityAreas" as const, "What you'd like to focus on right now."],
+                  ] as const).map(([label, pool, key, hint]) => (
+                    <div style={{ marginBottom: 12 }} key={key}>
+                      <div className="muted" style={{ fontSize: ".82rem", marginBottom: 6 }}><b style={{ color: "var(--ink)" }}>{label}</b> · {hint}</div>
+                      <div className="dv-intchips">
+                        {pool.map((x) => {
+                          const on = nu[key].includes(x);
+                          return (
+                            <button key={x} type="button" className={"dv-intchip" + (on ? " on" : "")}
+                              onClick={() => setNu({ ...nu, [key]: on ? nu[key].filter((i) => i !== x) : [...nu[key], x] })}>
+                              {x}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div style={{ marginBottom: 6 }}>
+                    <div className="muted" style={{ fontSize: ".82rem", marginBottom: 6 }}><b style={{ color: "var(--ink)" }}>History</b> · past behaviour, family context, or anything else you'd want the Brain to be aware of. Free text.</div>
+                    <textarea
+                      value={nu.history}
+                      onChange={(e) => setNu({ ...nu, history: e.target.value })}
+                      rows={4}
+                      placeholder="e.g. Went through a rough transition at school last term; slowly finding their feet again. Loves the after-school drama club."
+                      style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 8, border: "1px solid var(--ring)", background: "var(--surface)", color: "var(--ink)", fontFamily: "inherit", fontSize: ".9rem", resize: "vertical" }}
+                    />
+                  </div>
+                </details>
               </>
             ) : (
               <div className="adm-addrow">

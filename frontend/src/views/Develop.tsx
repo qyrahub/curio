@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
-import { COUNTRIES } from "../lib/options";
+import { COUNTRIES, PERSONALITIES, PREFERENCES, DISLIKES, SUPPORT_NEEDS, PRIORITY_AREAS } from "../lib/options";
 import GrowthFlow, { type FlowCtx } from "../components/GrowthFlow";
 
 /* Curio · Develop — parent cockpit. Profiles/themes/focused child come from the
@@ -108,6 +108,48 @@ export default function Develop() {
                 })}
               </div>
             </div>
+
+            <details style={{ marginTop: 14 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700 }}>More about {focus.name} <span className="muted" style={{ fontWeight: 500, fontSize: ".82rem" }}>· seeds Brain, Insights, nudges &amp; reports</span></summary>
+              <p className="muted" style={{ fontSize: ".82rem", marginTop: 8, marginBottom: 12 }}>All optional. Every field here is treated as parent intent, never as observed evidence of what {focus.name} can already do.</p>
+
+              {([
+                ["Personality", PERSONALITIES as readonly string[], "personality" as const],
+                ["Preferences", PREFERENCES as readonly string[], "preferences" as const],
+                ["Dislikes", DISLIKES as readonly string[], "dislikes" as const],
+                ["Support needs", SUPPORT_NEEDS as readonly string[], "needs" as const],
+                ["Priority areas", PRIORITY_AREAS as readonly string[], "priorityAreas" as const],
+              ] as const).map(([label, pool, key]) => {
+                const cur = (focus[key] as string[] | undefined) || [];
+                return (
+                  <div className="dv-field" key={key}>
+                    <label>{label}</label>
+                    <div className="dv-intchips">
+                      {pool.map((x) => {
+                        const on = cur.includes(x);
+                        return (
+                          <button key={x} className={"dv-intchip" + (on ? " on" : "")}
+                            onClick={() => updateChild({ ...focus, [key]: on ? cur.filter((i) => i !== x) : [...cur, x] })}>
+                            {x}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="dv-field">
+                <label>History <span className="muted" style={{ fontWeight: 500, fontSize: ".82rem" }}>· past behaviour, family context, anything the Brain should know</span></label>
+                <textarea
+                  value={focus.history || ""}
+                  onChange={(e) => updateChild({ ...focus, history: e.target.value || undefined })}
+                  rows={4}
+                  placeholder={`e.g. ${focus.name} went through a rough transition at school last term; slowly finding their feet again.`}
+                  style={{ width: "100%", boxSizing: "border-box", padding: 10, borderRadius: 8, border: "1px solid var(--ring)", background: "var(--surface)", color: "var(--ink)", fontFamily: "inherit", fontSize: ".9rem", resize: "vertical" }}
+                />
+              </div>
+            </details>
           </div>
           <div className="dv-card">
             <h3 style={{ marginTop: 0 }}>Theme</h3>

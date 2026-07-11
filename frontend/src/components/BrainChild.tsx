@@ -10,9 +10,12 @@ import { normTag } from "../lib/themes";
 
 const dt = (s?: string) => (s ? new Date(s) : new Date());
 
-export default function BrainChild({ childId, childName, childAge, accent, interests, outcomes, onGoDevelop }: {
+export default function BrainChild({ childId, childName, childAge, accent, interests, outcomes, personality, preferences, dislikes, supportNeeds, priorityAreas, history, onGoDevelop }: {
   childId: string; childName: string; childAge: number; accent: string;
-  interests?: string[]; outcomes?: string[]; onGoDevelop: () => void;
+  interests?: string[]; outcomes?: string[];
+  personality?: string[]; preferences?: string[]; dislikes?: string[];
+  supportNeeds?: string[]; priorityAreas?: string[]; history?: string;
+  onGoDevelop: () => void;
 }) {
   const [reviews, setReviews] = useState<ReviewCycle[]>([]);
   const [needs, setNeeds] = useState<GrowthNeed[]>([]);
@@ -50,8 +53,20 @@ export default function BrainChild({ childId, childName, childAge, accent, inter
     setBusy(true); setErr("");
     const hist = reviews.slice(0, 8).map((r) => `- ${(r.created_at || r.period || "").slice(0, 10)}: ${r.summary}. issues: ${(r.issues || []).join(", ") || "none"}; strengths: ${(r.strengths || []).join(", ") || "none"}`).join("\n");
     const needLines = needs.map((n) => `${n.title || n.area} (${n.status})`).join("; ") || "none";
-    const declared = `Parent's declared focus for ${childName} — INTENT, NOT EVIDENCE: interests=${(interests || []).join(", ") || "none stated"}; nurture goals=${(outcomes || []).join(", ") || "none stated"}. Use this to know what the parent cares about (bias your language toward these areas when history is silent), but do NOT treat it as observation of the child's actual skills or behaviour.`;
-    const prompt = `You are "the Brain" — summarise your current read of a child from their real history only. Child: ${childName}, age ${childAge}. Inputs so far: ${inputs}.\n${declared}\nReviews:\n${hist || "none yet"}\nNeeds: ${needLines}.\nWrite a warm, plain-language read. Base every strength/challenge/improving/watch ONLY on the review history; if it's thin, keep it short and say what's still unknown rather than inventing. Be specific and reference concrete patterns from the reviews (e.g. "recurring spelling slips", "focus improving at homework") - avoid generic parenting platitudes; each list item 4-10 words. Return ONLY JSON: {"summary": string, "strengths": [string], "challenges": [string], "improving": [string], "watch": [string]}.`;
+    const list = (arr?: string[]) => (arr && arr.length) ? arr.join(", ") : "none stated";
+    const declared = [
+      `Parent's declared context for ${childName} — INTENT AND BACKGROUND, NOT OBSERVATION:`,
+      `- interests: ${list(interests)}`,
+      `- nurture goals: ${list(outcomes)}`,
+      `- personality (as parent sees them): ${list(personality)}`,
+      `- preferences: ${list(preferences)}`,
+      `- dislikes / friction points: ${list(dislikes)}`,
+      `- support needs / accommodations: ${list(supportNeeds)}`,
+      `- current priority areas: ${list(priorityAreas)}`,
+      history ? `- history / context: ${history}` : "",
+      "Use this to know what the parent cares about and to phrase things appropriately — do NOT treat any of it as evidence of the child's actual skills or behaviour. All strengths/challenges/improving/watch must come only from the review history below.",
+    ].filter(Boolean).join("\n");
+    const prompt = `You are "the Brain" — summarise your current read of a child from their real history only. Child: ${childName}, age ${childAge}. Inputs so far: ${inputs}.\n${declared}\nReviews:\n${hist || "none yet"}\nNeeds recorded in Develop: ${needLines}.\nWrite a warm, plain-language read. Base every strength/challenge/improving/watch ONLY on the review history; if it's thin, keep it short and say what's still unknown rather than inventing. Be specific and reference concrete patterns from the reviews (e.g. "recurring spelling slips", "focus improving at homework") - avoid generic parenting platitudes; each list item 4-10 words. Return ONLY JSON: {"summary": string, "strengths": [string], "challenges": [string], "improving": [string], "watch": [string]}.`;
     const j = await askJSON<Omit<Portrait, "id" | "child_id">>(prompt);
     if (!j) { setErr("Couldn't refresh the read just now — try again."); setBusy(false); return; }
     try {
@@ -86,12 +101,20 @@ export default function BrainChild({ childId, childName, childAge, accent, inter
       </div>
 
       {/* Layer 1b — declared focus (parent intent, not observed evidence) */}
-      {((interests && interests.length) || (outcomes && outcomes.length)) && (
+      {((interests && interests.length) || (outcomes && outcomes.length) || (personality && personality.length) || (preferences && preferences.length) || (dislikes && dislikes.length) || (supportNeeds && supportNeeds.length) || (priorityAreas && priorityAreas.length) || (history && history.trim())) && (
         <div className="bc-card">
           <div className="bc-h">🎯 Declared focus <span className="muted">· what you set up for {childName}</span></div>
           <p className="muted bc-disc">These are your intent, not observations. The Brain uses them to know where to look and how to phrase things — it never treats them as evidence of what {childName} can already do.</p>
           {chip("Interests", interests, "improving")}
           {chip("Nurture goals", outcomes, "good")}
+          {chip("Personality", personality, "improving")}
+          {chip("Preferences", preferences, "improving")}
+          {chip("Dislikes", dislikes, "watch")}
+          {chip("Support needs", supportNeeds, "good")}
+          {chip("Priority areas", priorityAreas, "watch")}
+          {history && history.trim() && (
+            <div className="bc-facet"><span className="bc-ftag watch">History</span><div className="muted" style={{ fontSize: ".9rem", whiteSpace: "pre-wrap" }}>{history}</div></div>
+          )}
         </div>
       )}
 

@@ -57,7 +57,7 @@ export default function Brain() {
               <button key={k.id} className={k.id === focusChild.id ? "on" : ""} onClick={() => setFocusChild(k.id)}>{THEMES[k.theme].emoji} {k.name}</button>
             ))}
           </div>
-          <BrainChild childId={focusChild.id} childName={focusChild.name} childAge={focusChild.age} accent={THEMES[focusChild.theme].accent} interests={focusChild.interests} outcomes={focusChild.outcomes} onGoDevelop={() => { window.location.hash = "develop"; }} />
+          <BrainChild childId={focusChild.id} childName={focusChild.name} childAge={focusChild.age} accent={THEMES[focusChild.theme].accent} interests={focusChild.interests} outcomes={focusChild.outcomes} personality={focusChild.personality} preferences={focusChild.preferences} dislikes={focusChild.dislikes} supportNeeds={focusChild.needs} priorityAreas={focusChild.priorityAreas} history={focusChild.history} onGoDevelop={() => { window.location.hash = "develop"; }} />
           <h3 style={{ marginTop: 30 }}>Feed the shared Brain</h3>
           <p className="muted" style={{ marginTop: -6, marginBottom: 12 }}>Contribute general learning — a theory, an approach, an article (e.g. metacognition, Feuerstein) — that applies to <b>all</b> children. It is summarised in original words and added to the shared knowledge base, pending review, where it grounds guidance for every family.</p>
         </>

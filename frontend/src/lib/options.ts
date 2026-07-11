@@ -54,6 +54,50 @@ export const MEDIUMS = ["illustration", "text", "both"] as const;
 export const DETAILS = ["summary", "detailed"] as const;
 export const SIZES = ["small", "medium", "large"] as const;
 
+/* Extended child-profile taxonomies — seeded chip pools for personality traits,
+   engagement preferences, dislikes, support needs and current priority areas.
+   Values are plain strings (not the emoji Opt shape) — these describe a child,
+   and emojis on personality/dislikes/needs would feel cutesy. They match the
+   existing Develop→Interests chip pattern. Every value used here also flows into
+   the Brain's "Declared focus" surface as parent intent (never as observation),
+   and downstream Insights/nudges/reports can filter on these tags. */
+
+export const PERSONALITIES = [
+  "Curious", "Thoughtful", "Playful", "Sensitive", "Bold", "Cautious",
+  "Sociable", "Independent", "Creative", "Analytical", "Empathetic", "Determined",
+  "Cheerful", "Gentle", "Energetic", "Reflective", "Adventurous", "Detail-oriented",
+  "Musical", "Athletic", "Funny", "Nurturing",
+] as const;
+
+export const PREFERENCES = [
+  "Learns visually", "Learns by doing", "Learns by listening", "Loves stories",
+  "Prefers routines", "Likes surprises", "Enjoys solo time", "Thrives in groups",
+  "Morning person", "Evening person", "Prefers outdoors", "Prefers indoors",
+  "Loves puzzles", "Loves music", "Loves movement", "Loves screens",
+  "Loves art", "Loves reading", "Loves nature", "Loves numbers",
+] as const;
+
+export const DISLIKES = [
+  "Loud noises", "Bright lights", "Crowds", "Being rushed", "Being interrupted",
+  "Long tasks", "Sitting still", "Being wrong", "Trying new foods", "Sudden change",
+  "Waiting", "Being told what to do", "Reading aloud", "Being watched",
+  "Confrontation", "Losing games", "Bedtime", "Homework", "Chores", "Repetition",
+] as const;
+
+export const SUPPORT_NEEDS = [
+  "Extra time", "Movement breaks", "Quiet space", "Clear instructions",
+  "Visual aids", "Repetition", "One-on-one", "Advance warning", "Choice", "Structure",
+  "Praise", "Independence", "Emotional check-ins", "Calm-down space", "Rest breaks",
+  "Snacks", "Gentle touch", "Alone time", "Sensory input", "Extra reassurance",
+] as const;
+
+export const PRIORITY_AREAS = [
+  "Homework habits", "Reading fluency", "Emotional regulation", "Sibling relationship",
+  "Screen time", "Sleep habits", "Diet", "Confidence", "Attention", "Anxiety",
+  "Making friends", "Handling frustration", "Independence", "Chores",
+  "Physical activity", "Study skills", "Manners", "Sharing",
+] as const;
+
 /* Single source of truth for the countries Curio recognises. Used by:
    - Settings (child/parent creation)
    - Develop  (per-child country, for national benchmarking)
