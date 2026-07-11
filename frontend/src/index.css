@@ -1569,3 +1569,24 @@ main.wrap{padding-bottom:110px}
 .kb-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .kb-tag{background:var(--paper);border:1px solid var(--ring);border-radius:999px;padding:3px 9px;font-size:.74rem;font-weight:600;color:var(--ink)}
 .kb-src{font-size:.74rem;color:var(--ink-soft);font-style:italic}
+
+/* Grouped nav dropdowns (click-only) */
+.navgrp{position:relative;display:inline-flex}
+.navgrp > button{font-family:"Nunito";font-weight:700;border:0;background:transparent;color:var(--ink);padding:8px 13px 8px 15px;border-radius:999px;cursor:pointer;font-size:.92rem;transition:.12s;display:inline-flex;align-items:center;gap:5px}
+.navgrp > button:hover{color:var(--coral-deep)}
+.navgrp > button.on{background:var(--surface);box-shadow:var(--shadow-sm);color:var(--coral-deep)}
+.navgrp > button.opened{background:var(--surface);box-shadow:var(--shadow-sm)}
+.navgrp-caret{font-size:.6rem;opacity:.65;transition:transform .16s}
+.navgrp > button.opened .navgrp-caret{transform:rotate(180deg)}
+.navgrp-menu{position:absolute;left:0;top:calc(100% + 10px);z-index:45;background:var(--surface);border:1px solid var(--ring);border-radius:16px;box-shadow:var(--shadow,0 18px 40px -14px rgba(44,42,74,.34));padding:8px;min-width:246px;animation:navpop .13s ease}
+@keyframes navpop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.navgrp-item{display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;border-radius:11px;padding:9px 11px;cursor:pointer;font:inherit;text-align:left;color:var(--ink)}
+.navgrp-item:hover{background:var(--paper-2)}
+.navgrp-item.on{background:color-mix(in srgb,var(--coral) 16%,transparent)}
+.navgrp-ico{width:30px;height:30px;border-radius:9px;background:var(--paper);display:grid;place-items:center;font-size:1rem;line-height:1;flex:0 0 auto}
+.navgrp-txt{display:flex;flex-direction:column;line-height:1.25}
+.navgrp-txt b{font-weight:700;font-size:.94rem}
+.navgrp-txt small{font-size:.76rem;color:var(--ink-soft);font-weight:400;margin-top:1px}
+.acct-sep{height:1px;background:var(--ring);margin:6px 4px}
+@media (max-width:640px){.navgrp-menu{min-width:210px}}
+@media (prefers-reduced-motion:reduce){.navgrp-menu{animation:none}.navgrp-caret{transition:none}}

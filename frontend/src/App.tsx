@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { brand } from "./lib/brand";
 import { useHashRoute } from "./lib/useHashRoute";
 import { loadAuth } from "./lib/auth";
@@ -26,15 +26,59 @@ import Help from "./views/Help";
 import Account from "./views/Account";
 
 // Menus depend on who is "wearing" the site.
-const CHILD_LINKS: [string, string][] = [
-  ["home", "Home"], ["child", "Child"], ["coach", "Coach"], ["canvas", "Canvas"], ["planner", "Planner"], ["journal", "Journal"], ["library", "Library"], ["learn", "Knowledge"], ["help", "Help"],
+// Grouped nav: a few top-level items, each opening a click-only dropdown.
+// "Grow" deliberately holds the core loop in order: Develop -> Journal -> Insights -> Brain.
+type NavItem = { rt: string; label: string; icon: string; sub?: string };
+type NavEntry = { rt: string; label: string } | { label: string; items: NavItem[] };
+
+const G_GROW: NavItem[] = [
+  { rt: "develop", label: "Develop", icon: "🌱", sub: "Bring a need, build a plan" },
+  { rt: "journal", label: "Journal", icon: "📓", sub: "Notice and note" },
+  { rt: "insights", label: "Insights", icon: "📈", sub: "Growth over time" },
+  { rt: "brain", label: "Brain", icon: "🧠", sub: "What it has learned" },
 ];
-const PARENT_LINKS: [string, string][] = [
-  ["home", "Home"], ["child", "Child"], ["parent", "Parent"], ["family", "Family"], ["coach", "Coach"], ["develop", "Develop"], ["journal", "Journal"], ["insights", "Insights"], ["brain", "Brain"], ["library", "Library"], ["learn", "Knowledge"], ["workbench", "Workbench"], ["feedback", "Feedback"], ["help", "Help"],
+const G_CHILD: NavItem[] = [
+  { rt: "child", label: "Child", icon: "👧", sub: "Their space" },
+  { rt: "coach", label: "Coach", icon: "🎯", sub: "Homework help" },
+  { rt: "library", label: "Library", icon: "📚", sub: "Books & activities" },
+  { rt: "canvas", label: "Canvas", icon: "🎨", sub: "Create & play" },
 ];
-const ADMIN_LINKS: [string, string][] = [
-  ["home", "Home"], ["intelligence", "Intelligence"], ["insights", "Insights"], ["brain", "Brain"], ["learn", "Knowledge"], ["help", "Help"],
+const G_FAMILY: NavItem[] = [
+  { rt: "family", label: "Family", icon: "👪", sub: "Everyone together" },
+  { rt: "parent", label: "Parent", icon: "🫶", sub: "Your corner" },
+  { rt: "planner", label: "Planner", icon: "🗓", sub: "The plan" },
 ];
+const G_LEARN: NavItem[] = [
+  { rt: "learn", label: "Knowledge Centre", icon: "✽", sub: "Articles, papers, one-pagers" },
+];
+
+const CHILD_NAV: NavEntry[] = [
+  { rt: "home", label: "Home" },
+  { label: "My space", items: [G_CHILD[0], G_CHILD[1], G_CHILD[3], G_CHILD[2]] },
+  { label: "Grow", items: [G_GROW[1]] },
+  { label: "Family", items: [G_FAMILY[2]] },
+  { label: "Learn", items: G_LEARN },
+  { rt: "help", label: "Help" },
+];
+const PARENT_NAV: NavEntry[] = [
+  { rt: "home", label: "Home" },
+  { label: "Grow", items: G_GROW },
+  { label: "Child", items: G_CHILD },
+  { label: "Family", items: G_FAMILY },
+  { label: "Learn", items: G_LEARN },
+  { rt: "help", label: "Help" },
+];
+const ADMIN_NAV: NavEntry[] = [
+  { rt: "home", label: "Home" },
+  { label: "Grow", items: [{ rt: "intelligence", label: "Intelligence", icon: "⚡", sub: "The signal room" }, G_GROW[2], G_GROW[3]] },
+  { label: "Learn", items: G_LEARN },
+  { rt: "help", label: "Help" },
+];
+
+// Routes reachable per mode (dropdown items + the always-there ones).
+const routesOf = (entries: NavEntry[]) =>
+  entries.flatMap((e) => ("items" in e ? e.items.map((i) => i.rt) : [e.rt]));
+
 const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "help", "account", "settings"];
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
@@ -44,7 +88,40 @@ function firstName(user: UserPublic) {
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
-function AccountMenu({ user, nav }: { user: UserPublic | null; nav: (r: string) => void }) {
+function NavGroup({ label, items, route, go }: { label: string; items: NavItem[]; route: string; go: (r: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const here = items.some((i) => i.rt === route);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (ev: MouseEvent) => { if (ref.current && !ref.current.contains(ev.target as Node)) setOpen(false); };
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  return (
+    <div className="navgrp" ref={ref}>
+      <button className={(here ? "on" : "") + (open ? " opened" : "")} aria-expanded={open} aria-haspopup="menu"
+        onClick={() => setOpen((o) => !o)}>
+        {label}<span className="navgrp-caret" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="navgrp-menu" role="menu">
+          {items.map((i) => (
+            <button key={i.rt} role="menuitem" className={"navgrp-item" + (route === i.rt ? " on" : "")}
+              onClick={() => { setOpen(false); go(i.rt); }}>
+              <span className="navgrp-ico">{i.icon}</span>
+              <span className="navgrp-txt"><b>{i.label}</b>{i.sub && <small>{i.sub}</small>}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccountMenu({ user, nav, manage }: { user: UserPublic | null; nav: (r: string) => void; manage: string[] }) {
   const { mode, children, activeChild, switchToChild, switchToParent, switchToAdmin } = useProfile();
   const [open, setOpen] = useState(false);
   if (!user) return <button className="acct-signin" onClick={() => nav("account")}>Sign in</button>;
@@ -83,6 +160,19 @@ function AccountMenu({ user, nav }: { user: UserPublic | null; nav: (r: string) 
               </button>
             )}
             <div className="acct-div" />
+            {manage.length > 0 && <>
+              <div className="acct-sep" />
+              {manage.includes("workbench") && (
+                <button role="menuitem" className="acct-item" onClick={() => { setOpen(false); nav("workbench"); }}>
+                  <span className="acct-ico">🛠</span><span><b>Workbench</b></span>
+                </button>
+              )}
+              {manage.includes("feedback") && (
+                <button role="menuitem" className="acct-item" onClick={() => { setOpen(false); nav("feedback"); }}>
+                  <span className="acct-ico">💬</span><span><b>Feedback</b></span>
+                </button>
+              )}
+            </>}
             <button role="menuitem" className="acct-item" onClick={() => { setOpen(false); nav("settings"); }}>
               <span className="acct-ico">⚙️</span><span><b>Settings</b><span className="muted"> · account, themes &amp; more</span></span>
             </button>
@@ -107,8 +197,12 @@ function Shell() {
     setUser(null); nav("home");
   };
 
-  const links = mode === "child" ? CHILD_LINKS : mode === "admin" ? ADMIN_LINKS : PARENT_LINKS;
-  const allowed = mode === "admin" ? new Set<string>(ALL_ROUTES) : new Set<string>([...links.map((l) => l[0]), "account", "settings"]);
+  const entries = mode === "child" ? CHILD_NAV : mode === "admin" ? ADMIN_NAV : PARENT_NAV;
+  // Workbench + Feedback now live in the account menu (parent/admin only).
+  const manage = mode === "child" ? [] : ["workbench", "feedback"];
+  const allowed = mode === "admin"
+    ? new Set<string>(ALL_ROUTES)
+    : new Set<string>([...routesOf(entries), ...manage, "account", "settings"]);
   // keep the URL honest: if the current route isn't valid for this mode, go home.
   useEffect(() => { if (route && !allowed.has(route)) nav("home"); }, [route, mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const r = allowed.has(route) ? route : "home";
@@ -125,10 +219,12 @@ function Shell() {
             </div>
           </button>
           <div className="tabs">
-            {links.map(([rt, label]) => (
-              <button key={rt} className={r === rt ? "on" : ""} onClick={() => gnav(rt)}>{label}</button>
-            ))}
-            <AccountMenu user={user} nav={nav} />
+            {entries.map((e) =>
+              "items" in e
+                ? <NavGroup key={e.label} label={e.label} items={e.items} route={r} go={gnav} />
+                : <button key={e.rt} className={r === e.rt ? "on" : ""} onClick={() => gnav(e.rt)}>{e.label}</button>
+            )}
+            <AccountMenu user={user} nav={nav} manage={manage} />
           </div>
         </div>
       </nav>
