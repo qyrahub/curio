@@ -3,6 +3,7 @@ import type { UserPublic } from "../types";
 import PageHero from "../components/PageHero";
 import { growth, type FeedbackItem, type ReleaseItem, type Benchmark, type Knowledge } from "../lib/growth";
 import { ISSUE_TAGS, STRENGTH_TAGS } from "../lib/tags";
+import { COUNTRIES } from "../lib/options";
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 const FEATURE_STATUS = ["new", "incorporate", "scheduled", "dismissed", "shipped"];
@@ -165,7 +166,6 @@ function DataControls() {
 }
 
 const AGE_GROUPS = ["3-5", "6-8", "9-11", "12-14"];
-const COUNTRIES = ["South Africa", "United Kingdom", "United States", "Nigeria", "Kenya", "Australia", "Canada", "India"];
 const FREQS = ["off", "weekly", "monthly", "quarterly"];
 
 function Benchmarks() {

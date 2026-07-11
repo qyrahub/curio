@@ -45,3 +45,14 @@ export const SCOPES = ["my country", "my continent", "the whole world"] as const
 export const MEDIUMS = ["illustration", "text", "both"] as const;
 export const DETAILS = ["summary", "detailed"] as const;
 export const SIZES = ["small", "medium", "large"] as const;
+
+/* Single source of truth for the countries Curio recognises. Used by:
+   - Settings (child/parent creation)
+   - Develop  (per-child country, for national benchmarking)
+   - Feedback (admin benchmark authoring)
+   Kept in sync across all three so a country in one place is a country in all. */
+export const COUNTRIES = [
+  "South Africa", "United Kingdom", "United States", "Nigeria", "Kenya",
+  "Australia", "Canada", "India",
+] as const;
+export type Country = typeof COUNTRIES[number];

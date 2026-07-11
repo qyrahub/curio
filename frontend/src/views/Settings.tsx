@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
+import { INTERESTS, COUNTRIES } from "../lib/options";
 import type { UserPublic } from "../types";
 
 /* Curio · Settings — the single home for accounts, access, security, rights,
@@ -23,7 +24,7 @@ type Gender = ChildProfile["gender"];
 const GENDERS: { v: Gender; l: string }[] = [{ v: "girl", l: "Girl" }, { v: "boy", l: "Boy" }, { v: "other", l: "Other" }];
 const emptyNewUser = () => ({
   name: "", email: "", role: "child" as Role, username: "", password: "",
-  age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "", interests: "",
+  age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "", interests: [] as string[],
 });
 interface AcctSec { locked: boolean; vacation: { start: string; end: string } | null; }
 interface Guardian { id: string; name: string; email: string; role: "parent" | "guardian"; modules: string[]; canEditAccount: boolean; }
@@ -91,12 +92,11 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
     if (nu.role === "child") {
       const nc = addChild();
       const age = Math.max(1, Math.min(18, Math.round(Number(nu.age)) || nc.age));
-      const interests = nu.interests.split(",").map((s) => s.trim()).filter(Boolean);
       updateChild({
         ...nc, name: nu.name.trim(), age, gender: nu.gender,
         theme: (nu.theme || nc.theme) as ThemeKey,
         country: nu.country.trim() || undefined,
-        interests: interests.length ? interests : nc.interests,
+        interests: nu.interests.length ? nu.interests : nc.interests,
       });
     } else {
       setExtra((a) => [...a, {
@@ -202,23 +202,44 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
             </div>
 
             {nu.role === "child" ? (
-              <div className="adm-addrow">
-                <input type="number" min={1} max={18} placeholder="Age" value={nu.age} onChange={(e) => setNu({ ...nu, age: e.target.value })} style={{ maxWidth: 90 }} />
-                <select value={nu.gender} onChange={(e) => setNu({ ...nu, gender: e.target.value as Gender })}>
-                  {GENDERS.map((g) => <option key={g.v} value={g.v}>{g.l}</option>)}
-                </select>
-                <select value={nu.theme} onChange={(e) => setNu({ ...nu, theme: e.target.value as ThemeKey })}>
-                  <option value="">Theme (auto)</option>
-                  {(Object.keys(THEMES) as ThemeKey[]).map((k) => <option key={k} value={k}>{THEMES[k].emoji} {THEMES[k].name}</option>)}
-                </select>
-                <input placeholder="Country" value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ maxWidth: 140 }} />
-                <input placeholder="Interests (comma-separated)" value={nu.interests} onChange={(e) => setNu({ ...nu, interests: e.target.value })} />
-              </div>
+              <>
+                <div className="adm-addrow">
+                  <input type="number" min={1} max={18} placeholder="Age" value={nu.age} onChange={(e) => setNu({ ...nu, age: e.target.value })} style={{ maxWidth: 90 }} />
+                  <select value={nu.gender} onChange={(e) => setNu({ ...nu, gender: e.target.value as Gender })}>
+                    {GENDERS.map((g) => <option key={g.v} value={g.v}>{g.l}</option>)}
+                  </select>
+                  <select value={nu.theme} onChange={(e) => setNu({ ...nu, theme: e.target.value as ThemeKey })}>
+                    <option value="">Theme (auto)</option>
+                    {(Object.keys(THEMES) as ThemeKey[]).map((k) => <option key={k} value={k}>{THEMES[k].emoji} {THEMES[k].name}</option>)}
+                  </select>
+                  <select value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ minWidth: 180 }}>
+                    <option value="">Country (not set)</option>
+                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <div className="muted" style={{ fontSize: ".82rem", marginBottom: 6 }}>Interests · tap to toggle (drives the outputs; can be changed later under Develop)</div>
+                  <div className="dv-intchips">
+                    {INTERESTS.filter((o) => !o.surprise).map((o) => {
+                      const on = nu.interests.includes(o.v);
+                      return (
+                        <button key={o.v} type="button" className={"dv-intchip" + (on ? " on" : "")}
+                          onClick={() => setNu({ ...nu, interests: on ? nu.interests.filter((i) => i !== o.v) : [...nu.interests, o.v] })}>
+                          {o.e} {o.v}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="adm-addrow">
                 <input placeholder="Username" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} />
                 <input type="password" placeholder="Set password (or leave blank to invite)" value={nu.password} onChange={(e) => setNu({ ...nu, password: e.target.value })} />
-                <input placeholder="Country" value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ maxWidth: 140 }} />
+                <select value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ minWidth: 180 }}>
+                  <option value="">Country (not set)</option>
+                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
             )}
 

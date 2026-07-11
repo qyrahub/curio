@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import PageHero from "../components/PageHero";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
+import { COUNTRIES } from "../lib/options";
 import GrowthFlow, { type FlowCtx } from "../components/GrowthFlow";
 
 /* Curio · Develop — parent cockpit. Profiles/themes/focused child come from the
@@ -96,7 +97,7 @@ export default function Develop() {
             <div className="dv-field"><label>Country (for national benchmarking in Insights)</label>
               <select value={focus.country || ""} onChange={(e) => updateChild({ ...focus, country: e.target.value })}>
                 <option value="">Not set</option>
-                {["South Africa", "United Kingdom", "United States", "Nigeria", "Kenya", "Australia", "Canada", "India", "Other"].map((c) => <option key={c} value={c}>{c}</option>)}
+                {[...COUNTRIES, "Other"].map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div className="dv-field"><label>Interests (drive the outputs)</label>
