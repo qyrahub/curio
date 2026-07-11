@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { brand } from "../lib/brand";
 import { api } from "../lib/api";
-import { clearAuth, getUser, saveAuth } from "../lib/auth";
+import { getUser, saveAuth } from "../lib/auth";
 import { SectionArt } from "../components/heroArt";
 import type { UserPublic } from "../types";
 
@@ -42,21 +42,21 @@ export default function Account({ onChange }: { onChange: (u: UserPublic | null)
       } else {
         const r = mode === "signup" ? await api.signup(email, password) : await api.login(email, password);
         saveAuth(r.token, r.user); setUser(r.user); onChange(r.user);
+        window.location.hash = "home"; // land straight in the app
       }
     } catch (e) { setErr(String(e).replace(/^Error:\s*API \d+:\s*/, "")); }
     finally { setBusy(false); }
   }
-  function out() { clearAuth(); setUser(null); onChange(null); }
-
   if (user) {
+    // Already signed in — there is nothing to do here, so go where they wanted to be.
+    window.location.hash = "home";
     return (
       <div className="auth-page">
         <Sparkles />
         <div className="auth-card">
           <div style={{ maxWidth: 200, margin: "0 auto 6px" }}><SectionArt kind="account" /></div>
           <h2>Welcome back ✨</h2>
-          <p className="sub">Signed in as {user.email}</p>
-          <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={out}>Sign out</button>
+          <p className="sub">Taking you home…</p>
         </div>
       </div>
     );

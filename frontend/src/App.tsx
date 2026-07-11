@@ -167,7 +167,7 @@ function ParentGroup({ route, go }: { route: string; go: (r: string) => void }) 
   );
 }
 
-function AccountMenu({ user, nav, manage }: { user: UserPublic | null; nav: (r: string) => void; manage: string[] }) {
+function AccountMenu({ user, nav, manage, signOut }: { user: UserPublic | null; nav: (r: string) => void; manage: string[]; signOut: () => void }) {
   const { mode, activeChild, switchToParent, switchToAdmin } = useProfile();
   const [open, setOpen] = useState(false);
   if (!user) return <button className="acct-signin" onClick={() => nav("account")}>Sign in</button>;
@@ -213,7 +213,10 @@ function AccountMenu({ user, nav, manage }: { user: UserPublic | null; nav: (r: 
               )}
             </>}
             <button role="menuitem" className="acct-item" onClick={() => { setOpen(false); nav("settings"); }}>
-              <span className="acct-ico">⚙️</span><span><b>Settings</b><span className="muted"> · account, themes &amp; more</span></span>
+              <span className="acct-ico">⚙️</span><span><b>Settings</b></span>
+            </button>
+            <button role="menuitem" className="acct-item" onClick={() => { setOpen(false); signOut(); }}>
+              <span className="acct-ico">🚪</span><span><b>Sign out</b></span>
             </button>
           </div>
         </>
@@ -266,7 +269,7 @@ function Shell() {
                   : <NavGroup key={e.label} label={e.label} items={e.items} route={r} go={gnav} />)
                 : <button key={e.rt} className={r === e.rt ? "on" : ""} onClick={() => gnav(e.rt)}>{e.label}</button>
             )}
-            <AccountMenu user={user} nav={nav} manage={manage} />
+            <AccountMenu user={user} nav={nav} manage={manage} signOut={signOut} />
           </div>
         </div>
       </nav>
