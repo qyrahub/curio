@@ -1,0 +1,27 @@
+/* Check-in — dedicated styles */
+.ci-empty{ color:var(--ink-soft); font-style:italic; padding:20px; border:1px dashed var(--ring); border-radius:14px; }
+.ci-when{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 14px; }
+.ci-when label{ font-weight:700; font-size:.9rem; }
+.ci-when input{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink); border-radius:10px; padding:8px 12px; font:inherit; }
+.ci-when .muted{ font-size:.84rem; }
+.ci-msg{ background:color-mix(in srgb,#3FA66E 14%,transparent); border:1px solid #3FA66E; color:var(--ink); border-radius:11px; padding:10px 14px; margin-bottom:14px; font-weight:600; }
+.ci-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+@media(min-width:900px){ .ci-grid{ grid-template-columns:repeat(auto-fit,minmax(380px,1fr)); } }
+.ci-card{ background:var(--surface); border:1px solid var(--ring); border-radius:18px; padding:18px 20px; border-top:4px solid var(--ci); }
+.ci-head{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.ci-av{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:1.25rem; flex:none; }
+.ci-head h3{ margin:0; font-family:Fraunces,Fredoka,serif; font-size:1.25rem; }
+.ci-head .muted{ font-size:.82rem; }
+.ci-facts{ display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; }
+.ci-fact{ font-size:.8rem; font-weight:700; border-radius:99px; padding:4px 11px; border:1px solid var(--ring); background:var(--paper); }
+.ci-fact.good{ color:#2F7D55; } .ci-fact.watch{ color:#B4402A; } .ci-fact.cog{ color:#3F82C6; }
+.ci-nudges{ display:flex; flex-direction:column; gap:10px; }
+.ci-nudge{ background:var(--paper); border:1px solid var(--ring); border-radius:13px; padding:12px 14px; }
+.ci-why{ margin:0 0 4px; font-size:.88rem; color:var(--ink-soft); line-height:1.45; }
+.ci-do{ margin:0 0 10px; font-weight:600; line-height:1.45; }
+.ci-acts{ display:flex; flex-wrap:wrap; gap:6px; }
+.ci-acts button{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink); font:inherit; font-weight:700; font-size:.8rem; padding:6px 11px; border-radius:99px; cursor:pointer; }
+.ci-acts button:hover{ border-color:var(--ci); color:var(--ci); }
+.ci-foot{ display:flex; gap:14px; margin-top:12px; padding-top:10px; border-top:1px solid var(--ring); }
+.ci-link{ border:0; background:none; color:var(--ci); font:inherit; font-weight:700; font-size:.85rem; cursor:pointer; padding:0; }
+.ci-disc{ font-size:.8rem; font-style:italic; color:var(--ink-soft); margin-top:16px; }

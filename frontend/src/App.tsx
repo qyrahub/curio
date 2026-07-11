@@ -22,6 +22,7 @@ import Workbench from "./views/Workbench";
 import Brain from "./views/Brain";
 import KnowledgeCentre from "./views/KnowledgeCentre";
 import Journal from "./views/Journal";
+import CheckIn from "./views/CheckIn";
 import Help from "./views/Help";
 import Account from "./views/Account";
 
@@ -63,7 +64,7 @@ const CHILD_NAV: NavEntry[] = [
 const PARENT_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
   { label: "Child", items: G_CHILD },
-  { rt: "parent", label: "Parent" },
+  { label: "__parent__", items: [] },
   { label: "Family", items: G_FAMILY },
   { label: "Grow", items: G_GROW },
   { label: "Learn", items: G_LEARN },
@@ -80,7 +81,7 @@ const ADMIN_NAV: NavEntry[] = [
 const routesOf = (entries: NavEntry[]) =>
   entries.flatMap((e) => ("items" in e ? e.items.map((i) => i.rt) : [e.rt]));
 
-const ALL_ROUTES = ["home", "child", "parent", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "help", "account", "settings"];
+const ALL_ROUTES = ["home", "child", "parent", "checkin", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "help", "account", "settings"];
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 function firstName(user: UserPublic) {
@@ -122,8 +123,52 @@ function NavGroup({ label, items, route, go }: { label: string; items: NavItem[]
   );
 }
 
+function ParentGroup({ route, go }: { route: string; go: (r: string) => void }) {
+  const { children, mode, activeChild, switchToChild } = useProfile();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const here = route === "parent" || route === "checkin";
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (ev: MouseEvent) => { if (ref.current && !ref.current.contains(ev.target as Node)) setOpen(false); };
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  return (
+    <div className="navgrp" ref={ref}>
+      <button className={(here ? "on" : "") + (open ? " opened" : "")} aria-expanded={open} aria-haspopup="menu"
+        onClick={() => setOpen((o) => !o)}>
+        Parent<span className="navgrp-caret" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="navgrp-menu" role="menu">
+          <button role="menuitem" className={"navgrp-item" + (route === "parent" ? " on" : "")} onClick={() => { setOpen(false); go("parent"); }}>
+            <span className="navgrp-ico">🫶</span>
+            <span className="navgrp-txt"><b>Parent</b><small>Your corner</small></span>
+          </button>
+          <button role="menuitem" className={"navgrp-item" + (route === "checkin" ? " on" : "")} onClick={() => { setOpen(false); go("checkin"); }}>
+            <span className="navgrp-ico">☕</span>
+            <span className="navgrp-txt"><b>Check-in</b><small>How each child is doing, and what to do</small></span>
+          </button>
+          {children.length > 0 && <div className="navgrp-sep" />}
+          {children.map((c) => (
+            <button key={c.id} role="menuitem"
+              className={"navgrp-item" + (mode === "child" && activeChild && activeChild.id === c.id ? " on" : "")}
+              onClick={() => { setOpen(false); switchToChild(c.id); go("home"); }}>
+              <span className="navgrp-ico" style={{ background: `linear-gradient(140deg,${THEMES[c.theme].accent},${THEMES[c.theme].deep})` }}>{THEMES[c.theme].emoji}</span>
+              <span className="navgrp-txt"><b>{c.name}</b><small>{c.age}</small></span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountMenu({ user, nav, manage }: { user: UserPublic | null; nav: (r: string) => void; manage: string[] }) {
-  const { mode, children, activeChild, switchToChild, switchToParent, switchToAdmin } = useProfile();
+  const { mode, activeChild, switchToParent, switchToAdmin } = useProfile();
   const [open, setOpen] = useState(false);
   if (!user) return <button className="acct-signin" onClick={() => nav("account")}>Sign in</button>;
   const isAdmin = ADMIN_EMAILS.includes(user.email.toLowerCase());
@@ -143,13 +188,6 @@ function AccountMenu({ user, nav, manage }: { user: UserPublic | null; nav: (r: 
         <>
           <div className="acct-scrim" onClick={() => setOpen(false)} />
           <div className="acct-menu" role="menu">
-            <div className="acct-head">Switch profile</div>
-            {children.map((c) => (
-              <button key={c.id} role="menuitem" className={"acct-item" + (mode === "child" && activeChild && activeChild.id === c.id ? " on" : "")} onClick={() => pick(() => switchToChild(c.id))}>
-                <span className="acct-av sm" style={{ background: `linear-gradient(140deg,${THEMES[c.theme].accent},${THEMES[c.theme].deep})` }}>{THEMES[c.theme].emoji}</span>
-                <span><b>{c.name}</b><span className="muted"> · {c.age}</span></span>
-              </button>
-            ))}
             <button role="menuitem" className={"acct-item" + (mode === "parent" ? " on" : "")} onClick={() => pick(switchToParent)}>
               <span className="acct-av sm" style={{ background: "linear-gradient(140deg,#9B6DD6,#7A4FB5)" }}>👪</span>
               <span><b>Parent</b><span className="muted"> · sees all</span></span>
@@ -201,9 +239,10 @@ function Shell() {
   const entries = mode === "child" ? CHILD_NAV : mode === "admin" ? ADMIN_NAV : PARENT_NAV;
   // Workbench + Feedback now live in the account menu (parent/admin only).
   const manage = mode === "child" ? [] : ["workbench", "feedback"];
+  const parentRoutes = mode === "child" ? [] : ["parent", "checkin"];
   const allowed = mode === "admin"
     ? new Set<string>(ALL_ROUTES)
-    : new Set<string>([...routesOf(entries), ...manage, "account", "settings"]);
+    : new Set<string>([...routesOf(entries), ...parentRoutes, ...manage, "account", "settings"]);
   // keep the URL honest: if the current route isn't valid for this mode, go home.
   useEffect(() => { if (route && !allowed.has(route)) nav("home"); }, [route, mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const r = allowed.has(route) ? route : "home";
@@ -222,7 +261,9 @@ function Shell() {
           <div className="tabs">
             {entries.map((e) =>
               "items" in e
-                ? <NavGroup key={e.label} label={e.label} items={e.items} route={r} go={gnav} />
+                ? (e.label === "__parent__"
+                  ? <ParentGroup key="parent" route={r} go={gnav} />
+                  : <NavGroup key={e.label} label={e.label} items={e.items} route={r} go={gnav} />)
                 : <button key={e.rt} className={r === e.rt ? "on" : ""} onClick={() => gnav(e.rt)}>{e.label}</button>
             )}
             <AccountMenu user={user} nav={nav} manage={manage} />
@@ -233,6 +274,7 @@ function Shell() {
         {r === "home" && <Home nav={nav} />}
         {r === "child" && <Child />}
         {r === "parent" && <Parent />}
+        {r === "checkin" && <CheckIn />}
         {r === "family" && <Family />}
         {r === "planner" && <FamilyPlanner />}
         {r === "journal" && <Journal />}

@@ -1590,3 +1590,4 @@ main.wrap{padding-bottom:110px}
 .acct-sep{height:1px;background:var(--ring);margin:6px 4px}
 @media (max-width:640px){.navgrp-menu{min-width:210px}}
 @media (prefers-reduced-motion:reduce){.navgrp-menu{animation:none}.navgrp-caret{transition:none}}
+.navgrp-sep{height:1px;background:var(--ring);margin:6px 4px}
