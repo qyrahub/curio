@@ -89,10 +89,9 @@ export default function CheckIn() {
 
   const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
 
-  const toPlanner = (childId: string, name: string, text: string) => {
-    flash(addToPlanner(childId, when, text, "education")
-      ? `Added to ${name}'s planner on ${when}.`
-      : "Couldn't write to the planner.");
+  const toPlanner = async (childId: string, name: string, text: string) => {
+    const ok = await addToPlanner(childId, when, text, "education");
+    flash(ok ? `Added to ${name}'s planner on ${when}.` : "Saved on this device, but couldn't sync to the server.");
   };
   const toJournal = async (childId: string, name: string, text: string) => {
     try { await journal.add({ scope: "child", child_id: childId, text, mood: "idea" }); flash(`Noted in ${name}'s journal.`); }

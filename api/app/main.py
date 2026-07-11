@@ -972,6 +972,32 @@ def journal_patterns(body: dict, user: dict = Depends(get_current_user)) -> dict
     return {"summary": data.get("summary", ""), "themes": data.get("themes", []) or [], "watch": data.get("watch", []) or [], "count": len(entries)}
 
 
+PLANNER_KINDS = {"family", "interactive"}
+
+
+@v1.get("/planner/{kind}")
+def planner_get(kind: str, user: dict = Depends(get_current_user)) -> dict:
+    if kind not in PLANNER_KINDS:
+        raise HTTPException(404, "unknown planner")
+    doc = coll_get("planner", {"user_id": _uid(user), "kind": kind})
+    return {"kind": kind, "store": (doc or {}).get("store") or {}, "updated_at": (doc or {}).get("updated_at", "")}
+
+
+@v1.post("/planner/{kind}")
+def planner_put(kind: str, body: dict, user: dict = Depends(get_current_user)) -> dict:
+    if kind not in PLANNER_KINDS:
+        raise HTTPException(404, "unknown planner")
+    store = (body or {}).get("store")
+    if not isinstance(store, dict):
+        raise HTTPException(400, "store must be an object")
+    uid = _uid(user)
+    doc = coll_get("planner", {"user_id": uid, "kind": kind}) or {"id": f"pl_{uuid.uuid4().hex[:12]}", "user_id": uid, "kind": kind, "created_at": _now()}
+    doc["store"] = store
+    doc["updated_at"] = _now()
+    coll_put("planner", doc)
+    return {"ok": True, "updated_at": doc["updated_at"]}
+
+
 @v1.post("/journal/summary")
 def journal_summary(body: dict, user: dict = Depends(get_current_user)) -> dict:
     """Synthesise what the journal has taught us over a period. Honest: derived only

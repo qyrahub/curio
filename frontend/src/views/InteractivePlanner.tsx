@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type CSSProperties } from "react";
+import { api } from "../lib/api";
 import { useProfile, THEMES, type ThemeKey } from "../lib/profile";
 
 /* Curio · Interactive Planner — the web twin of the weekly planner.
@@ -108,7 +109,17 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
 
   const [calId, setCalId] = useState(scopes[0]?.id || "family");
   const [all, setAll] = useState<Record<string, Data>>(loadAll);
-  useEffect(() => { try { localStorage.setItem(PKEY, JSON.stringify(all)); } catch { /* */ } }, [all]);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    api.plannerGet("interactive")
+      .then((r) => { const srv = (r.store || {}) as Record<string, Data>; if (Object.keys(srv).length) setAll(srv); })
+      .catch(() => { /* keep local */ })
+      .finally(() => setHydrated(true));
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem(PKEY, JSON.stringify(all)); } catch { /* */ }
+    if (hydrated) { void api.plannerPut("interactive", all).catch(() => {}); }
+  }, [all, hydrated]);
   useEffect(() => { if (!scopes.find((s) => s.id === calId) && scopes[0]) setCalId(scopes[0].id); }, [scopes, calId]);
   useEffect(() => { if (calId && !all[calId]) setAll((p) => ({ ...p, [calId]: seed() })); }, [calId, all]);
 
@@ -249,8 +260,15 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                       onClick={() => patch((d) => ({ ...d, habits: d.habits.map((x, i) => (i === hi ? { ...x, days: x.days.map((v, j) => (j === di ? !v : v)) } : x)) }))}>{on ? "✓" : ""}</button>
                   ))}
                   <span className="ip-hbar"><span className="ip-hbar-fill" style={{ width: `${pct}%`, background: accent }} /><b>{pct}%</b></span>
+                  <button className="ip-hdel" title="Remove habit"
+                    onClick={() => patch((d) => ({ ...d, habits: d.habits.filter((_, i) => i !== hi) }))}>✕</button>
                 </div>
               ); })}
+            {data.habits.length === 0 && <div className="ip-hempty">No habits yet — add one below.</div>}
+            <button className="ip-hadd"
+              onClick={() => patch((d) => ({ ...d, habits: [...d.habits, { id: uid(), name: "New habit", days: [false, false, false, false, false, false, false] }] }))}>
+              ＋ Add habit
+            </button>
           </div>
         </div>
       </div>

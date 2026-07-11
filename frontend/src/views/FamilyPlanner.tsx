@@ -24,8 +24,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const keyOf = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
 const colIdx = (y: number, m: number, d: number) => (new Date(y, m, d).getDay() + 6) % 7; // Mon=0..Sun=6
 
-const PKEY = "curio.planner.v2";
-function load(): Store { try { const r = localStorage.getItem(PKEY); if (r) return JSON.parse(r) as Store; } catch { /* ignore */ } return {}; }
+import { pullPlanner, pushPlanner } from "../lib/plannerStore";
 
 interface Cal { id: string; name: string; theme: ThemeKey | null; kind: "family" | "child"; interest?: string; }
 
@@ -41,10 +40,12 @@ export default function FamilyPlanner({ embedded }: { embedded?: boolean }) {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [calId, setCalId] = useState(calendars[0]?.id || "family");
-  const [store, setStore] = useState<Store>(load);
+  const [store, setStore] = useState<Store>({});
+  const [hydrated, setHydrated] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ time: string; title: string; type: ItemType }>({ time: "16:00", title: "", type: "fun" });
-  useEffect(() => { try { localStorage.setItem(PKEY, JSON.stringify(store)); } catch { /* ignore */ } }, [store]);
+  useEffect(() => { pullPlanner().then((s) => { setStore(s as Store); }).finally(() => setHydrated(true)); }, []);
+  useEffect(() => { if (hydrated) { void pushPlanner(store as never); } }, [store, hydrated]);
   useEffect(() => { if (!calendars.find((c) => c.id === calId) && calendars[0]) setCalId(calendars[0].id); }, [calendars, calId]);
 
   const cal = calendars.find((c) => c.id === calId) || calendars[0];

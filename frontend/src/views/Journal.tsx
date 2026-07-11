@@ -72,7 +72,8 @@ export default function Journal() {
   const push = async (e: JournalEntry) => {
     const date = dayOf(e) || todayKey();
     const cal = e.scope === "child" && e.child_id ? e.child_id : "family";
-    if (!addToPlanner(cal, date, e.text, "education")) { flash("Couldn't write to the planner."); return; }
+    const ok = await addToPlanner(cal, date, e.text, "education");
+    if (!ok) flash("Saved on this device, but couldn't sync to the server.");
     try { const u = await journal.patch(e.id, { planned_for: date }); setEntries((x) => x.map((y) => (y.id === e.id ? u : y))); } catch { /* planner still has it */ }
     flash(`Added to the planner on ${date}.`);
   };
