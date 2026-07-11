@@ -87,8 +87,22 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
       setExtra((a) => a.filter((x) => x.id !== id && x.parentId !== id));
     }
   };
+  const invite = async (a: Account) => {
+    // Generate a plausible invite URL, copy to clipboard, and simulate emailing
+    // it. Both actions in one click, so "invite / copy / email" is one atomic
+    // step from the parent's point of view. When the auth backend is wired the
+    // toast will reflect the actual server response.
+    const token = uid() + uid();
+    const url = `https://curio.sproutwise.co.za/invite?t=${token}`;
+    let copied = false;
+    try { await navigator.clipboard.writeText(url); copied = true; } catch { /* clipboard may be unavailable */ }
+    flash(copied
+      ? `Invite link copied. Also emailed to ${a.email}.`
+      : `Invite link emailed to ${a.email}.`);
+  };
   const addAcct = () => {
-    if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }
+    if (!nu.name.trim()) { flash("Name is required."); return; }
+    if (nu.role !== "child" && !nu.email.trim()) { flash("Email is required for parent and admin accounts."); return; }
     if (nu.role === "child") {
       const nc = addChild();
       const age = Math.max(1, Math.min(18, Math.round(Number(nu.age)) || nc.age));
@@ -129,12 +143,25 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
   const setTheme = (t: string, k: ThemeKey) => { if (t === "parent") setParentTheme(k); else { const c = children.find((x) => x.id === t); if (c) updateChild({ ...c, theme: k }); } flash("Theme updated."); };
   const setDisp = (t: string, m: "light" | "dark" | "system") => { if (role === "admin") return; if (t === "parent") setParentDisplay(m); else { const c = children.find((x) => x.id === t); if (c) updateChild({ ...c, displayMode: m } as ChildProfile); } };
 
-  // rights: add parent/guardian
-  const [ng, setNg] = useState({ name: "", email: "", role: "parent" as "parent" | "guardian", modules: [...PARENT_MODULES], canEditAccount: false });
-  const addGuardian = () => {
-    if (!ng.name.trim() || !ng.email.trim()) { flash("Name and email required."); return; }
-    setSt((s) => ({ ...s, guardians: [...s.guardians, { id: uid(), name: ng.name.trim(), email: ng.email.trim(), role: ng.role, modules: ng.modules, canEditAccount: ng.canEditAccount }] }));
-    setNg({ name: "", email: "", role: "parent", modules: [...PARENT_MODULES], canEditAccount: false }); flash(`${ng.role === "parent" ? "Parent" : "Guardian"} invited.`);
+  // rights: grant module access to an existing parent/admin account. Previously
+  // this tab had its own name/email/role form that duplicated user creation
+  // and was confusing (an "Invite" button that also created an account) —
+  // now rights are strictly about existing users. Guardian records key back
+  // to accounts by email (stable across id regeneration).
+  const [ng, setNg] = useState({ accountId: "", role: "parent" as "parent" | "guardian", modules: [...PARENT_MODULES], canEditAccount: false });
+  const rightsCandidates = accounts.filter((a) => (a.role === "parent" || a.role === "admin") && a.id !== meId);
+  const grantRights = () => {
+    if (!ng.accountId) { flash("Pick a user to grant rights to."); return; }
+    const a = accounts.find((x) => x.id === ng.accountId);
+    if (!a) return;
+    setSt((s) => {
+      const others = s.guardians.filter((g) => g.email !== a.email);
+      const existing = s.guardians.find((g) => g.email === a.email);
+      const record: Guardian = { id: existing?.id || uid(), name: a.name, email: a.email, role: ng.role, modules: ng.modules, canEditAccount: ng.canEditAccount };
+      return { ...s, guardians: [...others, record] };
+    });
+    setNg({ accountId: "", role: "parent", modules: [...PARENT_MODULES], canEditAccount: false });
+    flash(`Rights ${st.guardians.some((g) => g.email === a.email) ? "updated" : "granted"} for ${a.name}.`);
   };
   const toggleNgMod = (m: string) => setNg((g) => ({ ...g, modules: g.modules.includes(m) ? g.modules.filter((x) => x !== m) : [...g.modules, m] }));
 
@@ -185,6 +212,7 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
                     <td>{a.role === "child" ? <button className={"adm-toggle" + (a.themeRight ? " on" : "")} onClick={() => toggleThemeRight(a.id)}><span /></button> : <span className="muted">—</span>}</td>
                     <td className="adm-actions">
                       {a.role === "child" && <button className="adm-btn xs" onClick={() => switchToChild(a.id.replace("acc-", ""))}>Open</button>}
+                      {a.id !== meId && (a.role === "parent" || a.role === "admin") && <button className="adm-btn xs" onClick={() => invite(a)}>Invite</button>}
                       {a.id !== meId && <button className="adm-btn xs ghost" onClick={() => flash(`Reset link sent to ${a.email}`)}>Reset</button>}
                       {a.id !== meId && <button className="adm-btn xs danger" onClick={() => removeAcct(a.id)}>Remove</button>}
                     </td>
@@ -197,7 +225,7 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
             <b>Add a user</b>
             <div className="adm-addrow">
               <input placeholder="Name" value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} />
-              <input placeholder="Email" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} />
+              <input placeholder={nu.role === "child" ? "Email (optional)" : "Email"} value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} />
               <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })}><option value="child">child</option><option value="parent">parent</option>{isAdmin && <option value="admin">admin</option>}</select>
             </div>
 
@@ -248,8 +276,8 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
             </div>
             <p className="muted" style={{ fontSize: ".82rem", marginTop: 8 }}>
               {nu.role === "child"
-                ? "Children can't sign themselves up — they're enrolled here by a parent or admin. Age, gender, theme, country and interests can all be set now, or changed later per-child."
-                : "A password set here triggers a secure invite link rather than being stored as plain text — same as the Reset action below."}
+                ? "Children can't sign themselves up — they're enrolled here by a parent or admin. Email is optional for children. Age, gender, theme, country and interests can all be set now, or changed later per-child."
+                : "A password set here triggers a secure invite link rather than being stored as plain text. You can also use the Invite action next to the row after they're added."}
             </p>
           </div>
           <div className="adm-card" style={{ marginTop: 14 }}>
@@ -297,14 +325,26 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
       {tab === "rights" && role !== "child" && (
         <div>
           <div className="adm-card">
-            <h3 style={{ marginTop: 0 }}>Add a parent or guardian</h3>
-            <p className="muted" style={{ marginTop: 0 }}>They get only the modules you give them. Choose whether they may change login, account or personal details — otherwise they can use the app but not alter the account. Once they log in they manage their own profile.</p>
-            <div className="set-grow"><input placeholder="Name" value={ng.name} onChange={(e) => setNg({ ...ng, name: e.target.value })} /><input placeholder="Email" value={ng.email} onChange={(e) => setNg({ ...ng, email: e.target.value })} /><select value={ng.role} onChange={(e) => setNg({ ...ng, role: e.target.value as "parent" | "guardian" })}><option value="parent">parent</option><option value="guardian">guardian</option></select></div>
-            <div className="set-modlabel">Modules they can access</div>
-            <div className="set-mods">{PARENT_MODULES.map((m) => <button key={m} className={"set-modchip" + (ng.modules.includes(m) ? " on" : "")} onClick={() => toggleNgMod(m)}>{m}</button>)}</div>
-            <label className="set-check"><input type="checkbox" checked={ng.canEditAccount} onChange={(e) => setNg({ ...ng, canEditAccount: e.target.checked })} /> May change login / account &amp; personal details</label>
-            <button className="adm-btn" style={{ marginTop: 10 }} onClick={addGuardian}>＋ Invite</button>
-            {st.guardians.length > 0 && <div className="set-glist">{st.guardians.map((g) => (<div className="set-grow-item" key={g.id}><div><b>{g.name}</b> <span className="set-role">{g.role}</span><div className="muted" style={{ fontSize: ".82rem" }}>{g.email} · {g.modules.length} modules · {g.canEditAccount ? "can edit account" : "view/use only"}</div></div><button className="adm-btn xs danger" onClick={() => setSt((s) => ({ ...s, guardians: s.guardians.filter((x) => x.id !== g.id) }))}>Remove</button></div>))}</div>}
+            <h3 style={{ marginTop: 0 }}>Grant rights to a parent or guardian</h3>
+            <p className="muted" style={{ marginTop: 0 }}>Pick an existing user, then choose the modules they can open. New parents are added under <b>Accounts &amp; access</b> — this tab only grants rights to people who already have an account.</p>
+            {rightsCandidates.length === 0 ? (
+              <div className="muted" style={{ padding: "10px 0" }}>No parent or admin accounts yet. Add one under <b>Accounts &amp; access</b>, then come back here.</div>
+            ) : (
+              <>
+                <div className="set-grow">
+                  <select value={ng.accountId} onChange={(e) => setNg({ ...ng, accountId: e.target.value })}>
+                    <option value="">Select a user…</option>
+                    {rightsCandidates.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.email}</option>)}
+                  </select>
+                  <select value={ng.role} onChange={(e) => setNg({ ...ng, role: e.target.value as "parent" | "guardian" })}><option value="parent">as parent</option><option value="guardian">as guardian</option></select>
+                </div>
+                <div className="set-modlabel">Modules they can access</div>
+                <div className="set-mods">{PARENT_MODULES.map((m) => <button key={m} className={"set-modchip" + (ng.modules.includes(m) ? " on" : "")} onClick={() => toggleNgMod(m)}>{m}</button>)}</div>
+                <label className="set-check"><input type="checkbox" checked={ng.canEditAccount} onChange={(e) => setNg({ ...ng, canEditAccount: e.target.checked })} /> May change login / account &amp; personal details</label>
+                <button className="adm-btn" style={{ marginTop: 10 }} onClick={grantRights}>{ng.accountId && st.guardians.some((g) => { const a = accounts.find((x) => x.id === ng.accountId); return a && g.email === a.email; }) ? "Update rights" : "Grant rights"}</button>
+              </>
+            )}
+            {st.guardians.length > 0 && <div className="set-glist">{st.guardians.map((g) => (<div className="set-grow-item" key={g.id}><div><b>{g.name}</b> <span className="set-role">{g.role}</span><div className="muted" style={{ fontSize: ".82rem" }}>{g.email} · {g.modules.length} modules · {g.canEditAccount ? "can edit account" : "view/use only"}</div></div><div style={{ display: "flex", gap: 6 }}><button className="adm-btn xs ghost" onClick={() => { const a = accounts.find((x) => x.email === g.email); if (a) setNg({ accountId: a.id, role: g.role, modules: [...g.modules], canEditAccount: g.canEditAccount }); }}>Edit</button><button className="adm-btn xs danger" onClick={() => setSt((s) => ({ ...s, guardians: s.guardians.filter((x) => x.id !== g.id) }))}>Revoke</button></div></div>))}</div>}
           </div>
           <div className="adm-card" style={{ marginTop: 14 }}>
             <h3 style={{ marginTop: 0 }}>Child modules</h3>
