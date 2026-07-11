@@ -6,8 +6,41 @@ import type { ParentOverview } from "../types";
 export default function Parent() {
   const [o, setO] = useState<ParentOverview | null>(null);
   const [reply, setReply] = useState<string | null>(null);
-  useEffect(() => { api.parentOverview().then(setO).catch(() => {}); }, []);
-  const checkin = (r: string) => api.checkin(r).then((x) => setReply(x.reply)).catch(() => {});
+  const [err, setErr] = useState("");
+  const [tries, setTries] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    setErr("");
+    api.parentOverview()
+      .then((x) => { if (alive) setO(x); })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        const msg = e instanceof Error ? e.message : String(e);
+        setErr(/401|403|unauth|forbidden/i.test(msg) ? "auth" : "fail");
+      });
+    return () => { alive = false; };
+  }, [tries]);
+
+  const checkin = (r: string) => api.checkin(r).then((x) => setReply(x.reply)).catch(() => setReply("Couldn't send that just now — try again."));
+
+  if (err) return (
+    <div className="view">
+      <div className="dv-card" style={{ maxWidth: 560 }}>
+        <h3 style={{ marginTop: 0 }}>{err === "auth" ? "Please sign in" : "Couldn't load your overview"}</h3>
+        <p className="muted">
+          {err === "auth"
+            ? "Your session has expired, so this page can't load. Sign in and it will come straight back."
+            : "Something went wrong fetching this page. Your data is safe — this is just the view."}
+        </p>
+        <div className="fb-row">
+          {err === "auth"
+            ? <button className="pt-go" onClick={() => { window.location.hash = "account"; }}>Sign in</button>
+            : <button className="pt-go" onClick={() => setTries((t) => t + 1)}>Try again</button>}
+        </div>
+      </div>
+    </div>
+  );
 
   if (!o) return <div className="view"><p className="muted">Loading…</p></div>;
   return (

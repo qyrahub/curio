@@ -44,8 +44,9 @@ const G_CHILD: NavItem[] = [
   { rt: "canvas", label: "Canvas", icon: "🎨", sub: "Create & play" },
 ];
 const G_FAMILY: NavItem[] = [
-  { rt: "family", label: "Family", icon: "👪", sub: "Everyone together" },
-  { rt: "planner", label: "Planner", icon: "🗓", sub: "The plan" },
+  { rt: "family", label: "Family", icon: "\u{1F46A}", sub: "Everyone together" },
+  { rt: "journal", label: "Journal", icon: "\u{1F4D3}", sub: "Notice and note" },
+  { rt: "planner", label: "Planner", icon: "\u{1F5D3}", sub: "The plan" },
 ];
 const G_LEARN: NavItem[] = [
   { rt: "learn", label: "Knowledge Centre", icon: "✽", sub: "Articles, papers, one-pagers" },
@@ -61,10 +62,10 @@ const CHILD_NAV: NavEntry[] = [
 ];
 const PARENT_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
-  { label: "Grow", items: G_GROW },
   { label: "Child", items: G_CHILD },
   { rt: "parent", label: "Parent" },
   { label: "Family", items: G_FAMILY },
+  { label: "Grow", items: G_GROW },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
 ];
