@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import AskCurio from "../components/AskCurio";
@@ -9,9 +9,11 @@ import {
   CADENCES, DETAILS, FAITHS, INTERESTS, MEDIUMS, OUTCOMES, SCOPES, SIZES,
   SPEECH_AUD, SPEECH_PLACE, SPORTS, SUBJECTS,
 } from "../lib/options";
+import { useProfile } from "../lib/profile";
 import type { ExportJob, Plan, PlanRequest } from "../types";
 
 export default function Child() {
+  const { activeChild, focusChild } = useProfile();
   const [age, setAge] = useState<number>(6);
   const [gender, setGender] = useState<string>("neutral");
   const [interests, setInterests] = useState<string[]>([]);
@@ -37,6 +39,20 @@ export default function Child() {
   const [exporting, setExporting] = useState(false);
   const [resultView, setResultView] = useState<"flip" | "cards">("flip");
   const [expFmt, setExpFmt] = useState<string | null>(null);
+
+  /* Seed the form from the currently-focused child so nurture goals, interests
+     and age set at profile-creation flow through to "Today's learning adventure"
+     without the parent having to re-tick everything. Only fires on child switch
+     (child.id changes) — never overwrites edits inside the same session. */
+  const src = activeChild || focusChild;
+  useEffect(() => {
+    if (!src) return;
+    setAge(src.age);
+    setGender(src.gender === "other" ? "neutral" : src.gender);
+    if (src.interests?.length) setInterests(src.interests);
+    if (src.outcomes?.length) setOutcomes(src.outcomes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src?.id]);
 
   async function curate() {
     setBusy(true); setErr(null); setExp(null); setPlan(null);

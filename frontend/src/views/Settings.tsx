@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useProfile, THEMES, type ChildProfile, type ThemeKey } from "../lib/profile";
-import { INTERESTS, COUNTRIES } from "../lib/options";
+import { INTERESTS, OUTCOMES, COUNTRIES } from "../lib/options";
 import type { UserPublic } from "../types";
 
 /* Curio · Settings — the single home for accounts, access, security, rights,
@@ -24,7 +24,8 @@ type Gender = ChildProfile["gender"];
 const GENDERS: { v: Gender; l: string }[] = [{ v: "girl", l: "Girl" }, { v: "boy", l: "Boy" }, { v: "other", l: "Other" }];
 const emptyNewUser = () => ({
   name: "", email: "", role: "child" as Role, username: "", password: "",
-  age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "", interests: [] as string[],
+  age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "",
+  interests: [] as string[], nurture: [] as string[],
 });
 interface AcctSec { locked: boolean; vacation: { start: string; end: string } | null; }
 interface Guardian { id: string; name: string; email: string; role: "parent" | "guardian"; modules: string[]; canEditAccount: boolean; }
@@ -111,6 +112,7 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
         theme: (nu.theme || nc.theme) as ThemeKey,
         country: nu.country.trim() || undefined,
         interests: nu.interests.length ? nu.interests : nc.interests,
+        outcomes: nu.nurture.length ? nu.nurture : undefined,
       });
     } else {
       setExtra((a) => [...a, {
@@ -253,6 +255,20 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
                       return (
                         <button key={o.v} type="button" className={"dv-intchip" + (on ? " on" : "")}
                           onClick={() => setNu({ ...nu, interests: on ? nu.interests.filter((i) => i !== o.v) : [...nu.interests, o.v] })}>
+                          {o.e} {o.v}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <div className="muted" style={{ fontSize: ".82rem", marginBottom: 6 }}>What would you like to nurture? · these seed the Child module and give the Brain a sense of what you're aiming for</div>
+                  <div className="dv-intchips">
+                    {OUTCOMES.map((o) => {
+                      const on = nu.nurture.includes(o.v);
+                      return (
+                        <button key={o.v} type="button" className={"dv-intchip" + (on ? " on" : "")}
+                          onClick={() => setNu({ ...nu, nurture: on ? nu.nurture.filter((i) => i !== o.v) : [...nu.nurture, o.v] })}>
                           {o.e} {o.v}
                         </button>
                       );

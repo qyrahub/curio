@@ -25,6 +25,14 @@ export const OUTCOMES: Opt[] = [
   { e: "🎯", v: "focus & attention" }, { e: "🤝", v: "kindness & empathy" }, { e: "🎨", v: "creativity" },
   { e: "🧩", v: "problem-solving" }, { e: "🧠", v: "memory" }, { e: "👋", v: "social skills" },
   { e: "🦅", v: "independence" }, { e: "🎤", v: "public speaking" }, { e: "🌱", v: "growth mindset" },
+  // Broader nurture areas — physical, spiritual, financial, life-skill and
+  // future-facing. Values chosen so they read naturally in plan copy and can
+  // be mixed with the interests / subjects taxonomies without collision.
+  { e: "🏃", v: "physical activity" }, { e: "⚽", v: "sports skills" }, { e: "🏋️", v: "fitness" },
+  { e: "🩺", v: "health awareness" }, { e: "🕊️", v: "spirituality" }, { e: "❤️", v: "emotional regulation" },
+  { e: "🌊", v: "resilience" }, { e: "🤲", v: "teamwork" }, { e: "🏆", v: "leadership" },
+  { e: "⏰", v: "time management" }, { e: "💰", v: "money smarts" }, { e: "🚀", v: "entrepreneurship" },
+  { e: "💻", v: "digital literacy" }, { e: "🌿", v: "environmental care" }, { e: "🌍", v: "world awareness" },
 ];
 export const SPEECH_AUD: Opt[] = [
   { e: "👩‍🏫", v: "teachers" }, { e: "🧒", v: "kids" }, { e: "👪", v: "parents" }, { e: "👥", v: "everyone" },
