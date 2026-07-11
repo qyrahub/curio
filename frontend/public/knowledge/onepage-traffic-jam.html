@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One-page learning — Where is the traffic jam?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F2; --panel:#FFFFFF; --ink:#201D30; --soft:#5C566F; --line:#E7E1D6;
+    --input:#1FA394; --elab:#3F82C6; --output:#E4634C; --gold:#B9822A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Newsreader",Georgia,serif;
+    font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .sheet{max-width:74rem;margin:0 auto;padding:34px 26px 50px}
+  .spectrum{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--input) 0 33.3%,var(--elab) 33.3% 66.6%,var(--output) 66.6%)}
+  .kicker{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.68rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--soft);margin-top:18px}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(1.9rem,4.2vw,2.7rem);line-height:1.05;margin:.3rem 0 .3rem}
+  h1 em{font-style:italic;color:var(--elab);font-weight:500}
+  .dek{color:var(--soft);font-size:1.08rem;margin:0 0 22px;max-width:44rem}
+
+  /* the two-column one-pager */
+  .pane{display:grid;grid-template-columns:1fr;gap:22px;align-items:start}
+  @media(min-width:900px){.pane{grid-template-columns:1.05fr 1fr;gap:30px}}
+
+  .visual{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;
+    box-shadow:0 26px 60px -46px rgba(32,29,48,.45);position:sticky;top:20px}
+  @media(max-width:899px){.visual{position:static}}
+  .visual .cap{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--soft);font-weight:700;margin-bottom:10px}
+  svg{width:100%;height:auto;display:block}
+
+  .explain h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.45rem;margin:0 0 .2rem}
+  .explain h2 + .bar{height:3px;width:70px;border-radius:99px;background:var(--elab);margin-bottom:.9rem}
+  .explain p{margin:0 0 1rem}
+  .explain .lead::first-letter{font-family:"Fraunces",serif;font-weight:600;float:left;font-size:3rem;
+    line-height:.8;padding:.06em .12em 0 0;color:var(--elab)}
+  .stages{margin:16px 0}
+  .st{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px dashed var(--line)}
+  .st:last-child{border-bottom:0}
+  .st .b{width:12px;height:12px;border-radius:50%;flex:none;margin-top:6px}
+  .st.i .b{background:var(--input)} .st.e .b{background:var(--elab)} .st.o .b{background:var(--output)}
+  .st h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.02rem;margin:0 0 2px}
+  .st p{margin:0;font-size:.9rem;color:var(--soft);line-height:1.42}
+  .insight{background:var(--panel);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;
+    padding:14px 18px;margin:18px 0}
+  .insight .l{font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gold);font-weight:700}
+  .insight p{margin:.4rem 0 0;font-family:"Fraunces",serif;font-style:italic;font-size:1.14rem;line-height:1.35}
+  .try{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 18px}
+  .try .l{font-family:"JetBrains Mono",monospace;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--elab);font-weight:700}
+  .try ul{margin:.5rem 0 0;padding-left:19px}
+  .try li{margin:.35rem 0;font-size:.92rem}
+
+  footer{margin-top:34px;color:var(--soft);font-size:.85rem}
+  footer .spectrum{margin-bottom:12px}
+  .attr{font-style:italic}
+  @media print{.visual{box-shadow:none;position:static}}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="spectrum" style="max-width:110px"></div>
+  <div class="kicker">One-page learning · Cognitive · Feuerstein</div>
+  <h1>Where is the <em>traffic jam</em>?</h1>
+  <p class="dek">One page. One idea: a struggling child usually isn't failing at "thinking" — they're stuck at one specific stage of it. Find the stage, and you find the fix.</p>
+
+  <div class="pane">
+    <!-- LEFT: the visual -->
+    <div class="visual">
+      <div class="cap">The three stages of thinking</div>
+      <svg viewBox="0 0 520 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: input flows into elaboration, which flows into output, with mediation guiding all three">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 Z" fill="#5C566F"/>
+          </marker>
+        </defs>
+
+        <!-- INPUT -->
+        <g>
+          <text x="26" y="42" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#1FA394" letter-spacing="1.6">INPUT</text>
+          <text x="26" y="60" font-family="Newsreader, serif" font-size="13" fill="#5C566F">gathering</text>
+          <!-- senses -->
+          <circle cx="44" cy="98" r="17" fill="none" stroke="#1FA394" stroke-width="2"/>
+          <path d="M37 98 h14 M44 91 v14" stroke="#1FA394" stroke-width="2" stroke-linecap="round"/>
+          <text x="70" y="103" font-family="Newsreader, serif" font-size="13" fill="#201D30">see</text>
+          <circle cx="44" cy="141" r="17" fill="none" stroke="#1FA394" stroke-width="2"/>
+          <path d="M38 141 a6 6 0 0 1 12 0 M44 135 v12" stroke="#1FA394" stroke-width="2" stroke-linecap="round"/>
+          <text x="70" y="146" font-family="Newsreader, serif" font-size="13" fill="#201D30">hear</text>
+          <circle cx="44" cy="184" r="17" fill="none" stroke="#1FA394" stroke-width="2"/>
+          <path d="M38 184 h12 M44 178 v12" stroke="#1FA394" stroke-width="2" stroke-linecap="round"/>
+          <text x="70" y="189" font-family="Newsreader, serif" font-size="13" fill="#201D30">read</text>
+          <path d="M120 141 H175" stroke="#5C566F" stroke-width="2" marker-end="url(#ah)"/>
+        </g>
+
+        <!-- ELABORATION (the head) -->
+        <g>
+          <ellipse cx="290" cy="141" rx="95" ry="82" fill="#F3F7FB" stroke="#3F82C6" stroke-width="2"/>
+          <text x="290" y="86" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#3F82C6" letter-spacing="1.6">ELABORATION</text>
+          <text x="290" y="104" text-anchor="middle" font-family="Newsreader, serif" font-size="13" fill="#5C566F">thinking</text>
+          <!-- gears -->
+          <circle cx="258" cy="150" r="24" fill="none" stroke="#3F82C6" stroke-width="2"/>
+          <circle cx="258" cy="150" r="8" fill="#3F82C6" opacity=".25"/>
+          <g stroke="#3F82C6" stroke-width="2" stroke-linecap="round">
+            <path d="M258 118 v10 M258 172 v10 M226 150 h10 M280 150 h10"/>
+            <path d="M236 128 l7 7 M273 165 l7 7 M280 128 l-7 7 M243 165 l-7 7"/>
+          </g>
+          <circle cx="320" cy="172" r="16" fill="none" stroke="#3F82C6" stroke-width="2"/>
+          <circle cx="320" cy="172" r="5" fill="#3F82C6" opacity=".25"/>
+          <text x="290" y="212" text-anchor="middle" font-family="Newsreader, serif" font-size="12" fill="#5C566F">define · compare · plan · test</text>
+          <path d="M388 141 H445" stroke="#5C566F" stroke-width="2" marker-end="url(#ah)"/>
+        </g>
+
+        <!-- OUTPUT -->
+        <g>
+          <text x="452" y="42" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#E4634C" letter-spacing="1.6" text-anchor="end">OUTPUT</text>
+          <text x="452" y="60" font-family="Newsreader, serif" font-size="13" fill="#5C566F" text-anchor="end">expressing</text>
+          <circle cx="470" cy="141" r="24" fill="none" stroke="#E4634C" stroke-width="2"/>
+          <path d="M458 141 h24 M470 129 v24" stroke="#E4634C" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+          <path d="M497 128 a16 16 0 0 1 0 26" stroke="#E4634C" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <text x="470" y="188" text-anchor="middle" font-family="Newsreader, serif" font-size="12" fill="#5C566F">say it ·</text>
+          <text x="470" y="204" text-anchor="middle" font-family="Newsreader, serif" font-size="12" fill="#5C566F">write it</text>
+        </g>
+
+        <!-- the jam markers -->
+        <g>
+          <rect x="146" y="118" width="24" height="24" rx="6" fill="#FDECE8" stroke="#E4634C" stroke-width="1.5"/>
+          <text x="158" y="135" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="#E4634C">!</text>
+          <rect x="414" y="118" width="24" height="24" rx="6" fill="#FDECE8" stroke="#E4634C" stroke-width="1.5"/>
+          <text x="426" y="135" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="#E4634C">!</text>
+          <text x="260" y="252" text-anchor="middle" font-family="Newsreader, serif" font-size="12.5" font-style="italic" fill="#E4634C">the jam can be at any stage</text>
+        </g>
+
+        <!-- MEDIATION band -->
+        <g>
+          <rect x="26" y="286" width="468" height="86" rx="14" fill="#FFFDF7" stroke="#B9822A" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text x="260" y="314" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#B9822A" letter-spacing="1.6">INQUIRY + MEDIATION</text>
+          <text x="260" y="338" text-anchor="middle" font-family="Newsreader, serif" font-size="14" fill="#201D30">An adult who guides the thinking —</text>
+          <text x="260" y="357" text-anchor="middle" font-family="Newsreader, serif" font-size="14" fill="#201D30">not one who just marks the answer.</text>
+          <path d="M150 286 V230" stroke="#B9822A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)" opacity=".6"/>
+          <path d="M290 286 V225" stroke="#B9822A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)" opacity=".6"/>
+          <path d="M430 286 V230" stroke="#B9822A" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)" opacity=".6"/>
+        </g>
+
+        <!-- unfolding -->
+        <g>
+          <text x="26" y="410" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="#5C566F" letter-spacing="1.4">AN UNFOLDING DEVELOPMENTAL PROCESS</text>
+          <rect x="26" y="422" width="200" height="34" rx="9" fill="#F4FBFA" stroke="#1FA394" stroke-width="1.3"/>
+          <text x="126" y="437" text-anchor="middle" font-family="Newsreader, serif" font-size="12.5" font-weight="500" fill="#201D30">Younger (≈4–8): emerging</text>
+          <text x="126" y="451" text-anchor="middle" font-family="Newsreader, serif" font-size="11" fill="#5C566F">functions still developing</text>
+          <path d="M236 439 H274" stroke="#5C566F" stroke-width="2" marker-end="url(#ah)"/>
+          <rect x="284" y="422" width="210" height="34" rx="9" fill="#F3F7FB" stroke="#3F82C6" stroke-width="1.3"/>
+          <text x="389" y="437" text-anchor="middle" font-family="Newsreader, serif" font-size="12.5" font-weight="500" fill="#201D30">Older (≈9–18+): integrating</text>
+          <text x="389" y="451" text-anchor="middle" font-family="Newsreader, serif" font-size="11" fill="#5C566F">with metacognition</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- RIGHT: the explanation -->
+    <div class="explain">
+      <h2>What you're looking at</h2>
+      <div class="bar"></div>
+      <p class="lead">Reuven Feuerstein's insight was that intelligence isn't fixed — it's <em>modifiable</em>. And that when a child gets stuck, the stuckness has an address. Information flows through three stages, and a breakdown at any one of them produces the same disappointing mark on the page, for entirely different reasons.</p>
+
+      <div class="stages">
+        <div class="st i"><span class="b"></span><div>
+          <h4>Input — did it land?</h4>
+          <p>Focus, systematic searching, precision, holding two things at once. A child who half-heard the instruction never had a chance at the rest.</p>
+        </div></div>
+        <div class="st e"><span class="b"></span><div>
+          <h4>Elaboration — did they work it?</h4>
+          <p>Defining the problem, sifting relevant from irrelevant, comparing, working memory, planning, summing up. This is thinking proper.</p>
+        </div></div>
+        <div class="st o"><span class="b"></span><div>
+          <h4>Output — did it come out cleanly?</h4>
+          <p>Precision, self-control, perseverance, copying accurately. A child can know the answer and still lose it on the way out.</p>
+        </div></div>
+      </div>
+
+      <div class="insight">
+        <div class="l">The reframe</div>
+        <p>Don't ask “Why aren't you getting this?” Ask “Where is the traffic jam?”</p>
+      </div>
+
+      <p>The gold band underneath is the part that does the work: <b>mediation</b>. Not marking, not re-explaining louder — but stepping in beside the child and lending them your thinking until it becomes theirs. That's the difference between a corrected worksheet and a built capability.</p>
+
+      <div class="try">
+        <div class="l">Try it tonight</div>
+        <ul>
+          <li><b>Check the input:</b> “Let's read it together. What is this question actually asking?”</li>
+          <li><b>Guide the elaboration:</b> “What's our plan? What can we safely ignore?”</li>
+          <li><b>Refine the output:</b> “Read it back to me — does it answer the question?”</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="spectrum"></div>
+    <p class="attr">Cognitive functions as identified by Prof. Reuven Feuerstein. An original one-page summary for Curio families; reproduces no source text. Guidance, not diagnosis.</p>
+  </footer>
+</div>
+</body>
+</html>

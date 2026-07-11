@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cognitive functions checklist — growth areas &amp; strengths</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F2; --panel:#FFFFFF; --ink:#201D30; --soft:#5C566F; --line:#E7E1D6;
+    --input:#1FA394; --elab:#3F82C6; --output:#E4634C; --gold:#B9822A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Newsreader",Georgia,serif;
+    font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:66rem;margin:0 auto;padding:0 24px}
+  .spectrum{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--input) 0 33.3%,var(--elab) 33.3% 66.6%,var(--output) 66.6%)}
+  .mono{font-family:"JetBrains Mono",monospace}
+
+  header{padding:54px 0 14px}
+  .kicker{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.7rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--soft);margin-top:20px}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2rem,4.6vw,2.9rem);line-height:1.05;margin:.35rem 0 .4rem}
+  .dek{font-size:1.12rem;color:var(--soft);max-width:46rem;margin:0}
+  .meta{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--soft);display:flex;gap:14px;flex-wrap:wrap;margin-top:16px}
+  .meta b{color:var(--ink)}
+
+  .how{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 20px;margin:22px 0}
+  .how .l{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .how p{margin:.4rem 0 0;font-size:.95rem}
+
+  .phase{margin:30px 0 10px}
+  .ph-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .ph-head h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.55rem;margin:0}
+  .ph-head .n{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:.7rem;letter-spacing:.14em;
+    text-transform:uppercase;padding:4px 9px;border-radius:7px;color:#fff}
+  .phase.i .n{background:var(--input)} .phase.e .n{background:var(--elab)} .phase.o .n{background:var(--output)}
+  .ph-head .sub{font-size:.92rem;color:var(--soft);font-style:italic}
+  .ph-bar{height:3px;border-radius:99px;margin:8px 0 12px}
+  .phase.i .ph-bar{background:var(--input)} .phase.e .ph-bar{background:var(--elab)} .phase.o .ph-bar{background:var(--output)}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  thead th{text-align:left;font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--soft);font-weight:700;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--paper)}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.92rem;line-height:1.45}
+  tr:last-child td{border-bottom:0}
+  td.num{width:34px;color:var(--soft);font-family:"JetBrains Mono",monospace;font-weight:700;font-size:.8rem}
+  td.grow{width:44%;color:var(--ink)}
+  td.func{width:44%;color:var(--ink)}
+  .chk{display:flex;gap:9px;align-items:flex-start}
+  .chk input{margin-top:3px;width:16px;height:16px;flex:none;accent-color:var(--gold);cursor:pointer}
+  .grow .chk input{accent-color:var(--output)}
+  .func .chk input{accent-color:var(--input)}
+  tr:hover td{background:#FCFAF6}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 0;font-size:.84rem;color:var(--soft)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  .tally{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,var(--paper) 30%);
+    padding:16px 0 22px;margin-top:22px}
+  .tally .box{background:var(--ink);color:#F3EFE7;border-radius:13px;padding:14px 20px;display:flex;
+    gap:22px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .tally .box .t{font-family:"Fraunces",serif;font-size:1.05rem}
+  .tally .box .nums{display:flex;gap:18px;flex-wrap:wrap;font-family:"JetBrains Mono",monospace;font-size:.82rem}
+  .tally .box .nums b{color:#8FE0B4}
+  .tally button{border:1px solid rgba(255,255,255,.25);background:transparent;color:#F3EFE7;border-radius:99px;
+    padding:7px 15px;font:inherit;font-size:.85rem;cursor:pointer}
+  .tally button:hover{border-color:#8FE0B4;color:#8FE0B4}
+
+  footer{padding:30px 0 60px;color:var(--soft);font-size:.88rem}
+  footer .spectrum{margin-bottom:14px}
+  .attr{font-style:italic;font-size:.85rem}
+  @media print{.tally{display:none}body{font-size:10.5pt}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <div class="spectrum" style="max-width:110px"></div>
+  <div class="kicker">Cognitive development · Feuerstein · Reference</div>
+  <h1>Cognitive functions checklist</h1>
+  <p class="dek">A working reference for locating where thinking gets stuck — and naming what's already strong. Each row pairs a <b>growth area</b> (what a struggle looks like) with the <b>cognitive function</b> it corresponds to (what it looks like when it's working).</p>
+  <div class="meta"><span><b>For</b> Parents &amp; Families</span><span><b>Discipline</b> Cognitive</span><span><b>Use</b> Reference</span></div>
+</div></header>
+
+<div class="wrap">
+
+  <div class="how">
+    <div class="l">How to use this</div>
+    <p>Don't score a child on all of it at once. Bring one piece of real work or one real moment to mind, and tick only what you actually observed. Ticks on the left name something to build; ticks on the right name a strength to lean on. Both matter — and both change over time, which is exactly the point.</p>
+    <div class="legend">
+      <span><i style="background:var(--output)"></i> Growth area — what's getting stuck</span>
+      <span><i style="background:var(--input)"></i> Cognitive function — what's working</span>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="phase i">
+    <div class="ph-head">
+      <span class="n">Phase 1</span>
+      <h2>Input</h2>
+      <span class="sub">Data gathering — the quality and quantity of information taken in.</span>
+    </div>
+    <div class="ph-bar"></div>
+    <table>
+      <thead><tr><th></th><th>Growth area</th><th>Cognitive function</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles to manage information from several senses at once; easily distracted when it's noisy or busy.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Focused, clear use of all sensory input — can copy from the board while still listening.</span></label></td></tr>
+        <tr><td class="num">2</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Unplanned, impulsive start — jumps in before reading or hearing the full instructions; rushes to the solution.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Systematic approach — takes in instructions before starting; searches methodically for what's relevant.</span></label></td></tr>
+        <tr><td class="num">3</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Incomplete grasp of the words and terms needed to hold the concept.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Has the vocabulary and labels needed to think about the topic.</span></label></td></tr>
+        <tr><td class="num">4</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Poor spatial awareness and organisation — untidy, disorganised work; loses their place.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Aware of spatial orientation; organises themselves and their work systematically.</span></label></td></tr>
+        <tr><td class="num">5</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Doesn't grasp time, or processes slowly.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Understands and applies time — how long to spend, how to sequence, how to plan.</span></label></td></tr>
+        <tr><td class="num">6</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Doesn't grasp what stays the same when other things change.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Conserves constancies — holds what stays the same, separate from what changes.</span></label></td></tr>
+        <tr><td class="num">7</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Imprecise, inaccurate data gathering; assumes rather than checks; brings in too much or too little.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Precise, accurate gathering — focuses on what's actually needed.</span></label></td></tr>
+        <tr><td class="num">8</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty holding two or more sources of information at once.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Considers two or more sources together — can hold two things in mind.</span></label></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ELABORATION -->
+  <div class="phase e">
+    <div class="ph-head">
+      <span class="n">Phase 2</span>
+      <h2>Elaboration</h2>
+      <span class="sub">Processing — using and transforming what was gathered, to solve or decide.</span>
+    </div>
+    <div class="ph-bar"></div>
+    <table>
+      <thead><tr><th></th><th>Growth area</th><th>Cognitive function</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles to realise or define what the problem actually is (“I don't know what to do / I don't understand the question”).</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Accurately perceives and defines the problem; knows what's expected and can think about how to tackle it.</span></label></td></tr>
+        <tr><td class="num">2</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty choosing what's relevant versus irrelevant.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Selects relevant information — sees what's important.</span></label></td></tr>
+        <tr><td class="num">3</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Doesn't compare well; can't find similarities and differences.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Compares by finding similarities and differences.</span></label></td></tr>
+        <tr><td class="num">4</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Working-memory difficulty — loses information mid-task on multi-step work.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Good working memory — holds information in mind while manipulating it.</span></label></td></tr>
+        <tr><td class="num">5</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles to see how events and subjects link — cause and effect, learning from past mistakes.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Meaningful understanding of reality as interconnected — sees cause and effect; learns from experience.</span></label></td></tr>
+        <tr><td class="num">6</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Can reach an answer but doesn't show the working or defend the thinking.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Seeks and uses logical evidence — can prove their thinking.</span></label></td></tr>
+        <tr><td class="num">7</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty with abstract information; strongly prefers the concrete and hands-on.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Engages in abstract thinking — visualises and creates a mental picture or plan.</span></label></td></tr>
+        <tr><td class="num">8</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles with inferential thinking (“if this is true, what else could be?”).</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Engages hypothetical thinking; brainstorms what else could be true.</span></label></td></tr>
+        <tr><td class="num">9</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Gets stuck on how to test or prove an idea.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Finds strategies to test hypotheses — “how could I check this?”</span></label></td></tr>
+        <tr><td class="num">10</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles to sum up — gets lost in details; misses the main idea.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Summative behaviour — sees the bigger picture and works with both parts and whole.</span></label></td></tr>
+        <tr><td class="num">11</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Lack of planning behaviour.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Plans — thinks forward, states steps and reasons.</span></label></td></tr>
+        <tr><td class="num">12</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles to form groups or categories and label them appropriately.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Forms categories by grouping and naming the groups.</span></label></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="phase o">
+    <div class="ph-head">
+      <span class="n">Phase 3</span>
+      <h2>Output</h2>
+      <span class="sub">Communication — expressing the solution clearly and accurately.</span>
+    </div>
+    <div class="ph-bar"></div>
+    <table>
+      <thead><tr><th></th><th>Growth area</th><th>Cognitive function</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Egocentric viewpoint — sees only their own perspective; struggles to communicate others'.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Communicates multiple perspectives — can express an idea from another point of view.</span></label></td></tr>
+        <tr><td class="num">2</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty seeing connections or analogies and applying them to a new context.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Projects relationships — transfers connections to new situations.</span></label></td></tr>
+        <tr><td class="num">3</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Blocking — cognitive or emotional shutdown.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Perseveres — sticks with it, doesn't give up.</span></label></td></tr>
+        <tr><td class="num">4</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Trial-and-error responses; random guessing.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Gives a thoughtful response — pauses (“just a moment…”) and checks it truly answers the question.</span></label></td></tr>
+        <tr><td class="num">5</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty communicating in full sentences with adequate vocabulary.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Uses the right words and full sentences to express ideas.</span></label></td></tr>
+        <tr><td class="num">6</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Lack of precision — rambles, goes off topic, or writes everything they know without answering the question.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Precise and accurate — answers exactly what was asked, with intent.</span></label></td></tr>
+        <tr><td class="num">7</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Difficulty with visual transportation and tracking — messy work, skipped steps, copying errors, losing place when reading.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Visually transports accurately — copies correctly; work is neat and logical.</span></label></td></tr>
+        <tr><td class="num">8</td>
+          <td class="grow"><label class="chk"><input type="checkbox"><span>Struggles with self-control — impulsive, rushed, answers before hearing all the facts.</span></label></td>
+          <td class="func"><label class="chk"><input type="checkbox"><span>Shows self-control — pauses to think, slows down for accuracy, monitors their own response.</span></label></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tally">
+    <div class="box">
+      <span class="t">What you've noticed</span>
+      <span class="nums">
+        <span>Growth areas: <b id="g">0</b></span>
+        <span>Strengths: <b id="f">0</b></span>
+      </span>
+      <button onclick="document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);count()">Reset</button>
+    </div>
+  </div>
+
+</div>
+
+<footer><div class="wrap">
+  <div class="spectrum"></div>
+  <p class="attr">Cognitive functions as identified by Prof. Reuven Feuerstein (Structural Cognitive Modifiability). An original reference written for Curio families, informed by a parent workshop on cognitive strategies and functions; it reproduces no source text. This is a guide for noticing and conversation — not a clinical or diagnostic instrument.</p>
+  <p style="font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);margin:.4rem 0 0">Curio · Knowledge Centre</p>
+</div></footer>
+
+<script>
+  function count(){
+    document.getElementById('g').textContent = document.querySelectorAll('.grow input:checked').length;
+    document.getElementById('f').textContent = document.querySelectorAll('.func input:checked').length;
+  }
+  document.addEventListener('change', (e) => { if (e.target.type === 'checkbox') count(); });
+</script>
+</body>
+</html>

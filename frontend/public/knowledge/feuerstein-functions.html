@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where is the traffic jam? — Cognitive strategies &amp; functions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F2; --panel:#FFFFFF; --ink:#201D30; --soft:#5C566F; --line:#E7E1D6;
+    --input:#1FA394; --elab:#3F82C6; --output:#E4634C; --gold:#B9822A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Newsreader",Georgia,serif;
+    font-size:19px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:60rem;margin:0 auto;padding:0 26px}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .spectrum{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--input) 0 33.3%,var(--elab) 33.3% 66.6%,var(--output) 66.6%)}
+
+  header{padding:58px 0 18px}
+  .kicker{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.7rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--soft);margin-top:22px}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(2.1rem,5vw,3.1rem);line-height:1.04;
+    letter-spacing:-.015em;margin:.4rem 0 .5rem}
+  h1 em{font-style:italic;color:var(--elab);font-weight:500}
+  .dek{font-size:1.2rem;color:var(--soft);line-height:1.45;margin:0 0 6px;max-width:44rem}
+  .meta{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--soft);display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+  .meta b{color:var(--ink)}
+
+  .frame{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:24px 0}
+  .frame .l{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold);font-weight:700}
+  .frame p{margin:.5rem 0 0}
+
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:1.7rem;margin:2.2rem 0 .3rem}
+  h2 + .spectrum{max-width:80px;margin-bottom:1rem;height:3px}
+  p.lead::first-letter{font-family:"Fraunces",serif;font-weight:600;float:left;font-size:3.3rem;line-height:.8;
+    padding:.06em .12em 0 0;color:var(--elab)}
+
+  /* the flow diagram */
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:26px 0}
+  @media(max-width:820px){.flow{grid-template-columns:1fr;gap:14px}.flow .arrow{transform:rotate(90deg);justify-self:center}}
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+  .stage::before{content:"";position:absolute;top:0;left:0;right:0;height:5px}
+  .stage.i::before{background:var(--input)} .stage.e::before{background:var(--elab)} .stage.o::before{background:var(--output)}
+  .stage .tag{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .stage.i .tag{color:var(--input)} .stage.e .tag{color:var(--elab)} .stage.o .tag{color:var(--output)}
+  .stage h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.2rem;margin:6px 0 4px}
+  .stage p{margin:0;font-size:.9rem;color:var(--soft);line-height:1.42}
+  .arrow{font-size:1.6rem;color:var(--soft)}
+
+  /* function columns */
+  .cols{display:grid;grid-template-columns:1fr;gap:16px;margin:18px 0}
+  @media(min-width:880px){.cols{grid-template-columns:repeat(3,1fr)}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .col h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.1rem;margin:0 0 2px;display:flex;align-items:center;gap:8px}
+  .col .sub{font-size:.82rem;color:var(--soft);margin:0 0 10px;font-style:italic}
+  .col ol{margin:0;padding-left:20px}
+  .col li{margin:.5rem 0;font-size:.92rem;line-height:1.4}
+  .col li b{font-weight:600}
+  .col li span{display:block;color:var(--soft);font-size:.86rem}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .col.i .dot{background:var(--input)} .col.e .dot{background:var(--elab)} .col.o .dot{background:var(--output)}
+
+  /* coaching steps */
+  .steps{display:grid;grid-template-columns:1fr;gap:12px;margin:16px 0}
+  @media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .step{border:1px dashed var(--line);border-radius:13px;padding:15px 17px;background:var(--panel)}
+  .step .n{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);font-weight:700}
+  .step h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.05rem;margin:4px 0 8px}
+  .step .say{font-size:.92rem;line-height:1.45;color:var(--ink);background:var(--paper);border-radius:9px;padding:10px 12px;border-left:3px solid var(--gold)}
+
+  .pull{border-left:3px solid var(--gold);padding-left:22px;margin:1.8rem 0;font-family:"Fraunces",serif;
+    font-size:1.35rem;font-style:italic;line-height:1.34}
+
+  .unfold{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:18px 0}
+  .unfold .side{flex:1;min-width:220px}
+  .unfold .side .a{font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--elab);font-weight:700}
+  .unfold .side h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.05rem;margin:3px 0 4px}
+  .unfold .side p{margin:0;font-size:.88rem;color:var(--soft)}
+  .unfold .ar{font-size:1.5rem;color:var(--soft)}
+
+  footer{padding:34px 0 64px;color:var(--soft);font-size:.9rem}
+  footer .spectrum{margin-bottom:16px}
+  .attr{font-size:.85rem;font-style:italic}
+  @media print{body{font-size:11pt}.stage,.col,.step{box-shadow:none}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <div class="spectrum" style="max-width:110px"></div>
+  <div class="kicker">Cognitive development · Feuerstein</div>
+  <h1>“Where is the <em>traffic jam</em>?”</h1>
+  <p class="dek">A way of looking at a struggling learner that changes the question — from <em>why aren't you getting this?</em> to <em>where, exactly, is this getting stuck?</em></p>
+  <div class="meta"><span><b>For</b> Parents &amp; Families</span><span><b>Discipline</b> Cognitive</span><span><b>Read</b> 7 min</span></div>
+</div></header>
+
+<div class="wrap">
+
+  <div class="frame">
+    <div class="l">The core idea</div>
+    <p>Thinking is not one thing — it happens in three stages. Information is <b>gathered</b>, then <b>processed</b>, then <b>expressed</b>. When a child struggles, the breakdown is almost always in one specific stage, not in "ability." Find the stage, and you find something you can actually help with.</p>
+  </div>
+
+  <p class="lead">The psychologist Reuven Feuerstein built his life's work on a radical and hopeful premise: intelligence is not a fixed quantity you are issued at birth. It is <em>modifiable</em>. With the right mediation — an adult who steps in and guides the thinking, rather than just marking the answer — a child's cognitive functions can be built, strengthened and integrated over time.</p>
+
+  <p>The practical gift of his framework is diagnostic. It gives a parent a map for locating the jam.</p>
+
+  <h2>The three stages of information processing</h2>
+  <div class="spectrum"></div>
+
+  <div class="flow">
+    <div class="stage i">
+      <span class="tag">Stage 1</span>
+      <h3>Input</h3>
+      <p>Gathering. Taking the information in — accurately, completely, systematically.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage e">
+      <span class="tag">Stage 2</span>
+      <h3>Elaboration</h3>
+      <p>Thinking. Working with what came in — defining, comparing, planning, testing.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage o">
+      <span class="tag">Stage 3</span>
+      <h3>Output</h3>
+      <p>Expressing. Getting the answer out clearly, precisely, under control.</p>
+    </div>
+  </div>
+
+  <p>A child who "can't do comprehension" might have understood the passage perfectly and simply rushed the output. A child who "isn't trying" might never have taken the instruction in cleanly at Input. The mark on the page looks the same. The fix is completely different.</p>
+
+  <h2>What each stage is made of</h2>
+  <div class="spectrum"></div>
+  <p>Each stage is built from specific, nameable functions. You don't need to memorise them — you need to recognise them when they wobble.</p>
+
+  <div class="cols">
+    <div class="col i">
+      <h4><span class="dot"></span> Input</h4>
+      <p class="sub">Gathering the data</p>
+      <ol>
+        <li><b>Focus and perceive</b><span>Use the senses and the mind together.</span></li>
+        <li><b>Search systematically</b><span>Seek with a method, not at random.</span></li>
+        <li><b>Label things</b><span>Have the words to think with.</span></li>
+        <li><b>Know where you are in space</b><span>Left, right, front, back.</span></li>
+        <li><b>Be aware of time</b><span>How long, how often, in what order.</span></li>
+        <li><b>Conserve constancies</b><span>Know what stays the same when things change.</span></li>
+        <li><b>Collect precise, accurate data</b><span>Right stuff in, right answer out.</span></li>
+        <li><b>Use two or more sources at once</b><span>Hold several things in mind together.</span></li>
+      </ol>
+    </div>
+    <div class="col e">
+      <h4><span class="dot"></span> Elaboration</h4>
+      <p class="sub">Working with the data</p>
+      <ol>
+        <li><b>Define the problem</b><span>What am I actually being asked?</span></li>
+        <li><b>Find the relevant cues</b><span>What matters — and what doesn't?</span></li>
+        <li><b>Compare</b><span>See similarities and differences.</span></li>
+        <li><b>Recall and use information</b><span>Hold the picture in working memory.</span></li>
+        <li><b>Understand reality</b><span>Look for cause and effect, not fragments.</span></li>
+        <li><b>Provide logical evidence</b><span>Show the working, not just the answer.</span></li>
+        <li><b>Think abstractly</b><span>Move beyond the concrete; visualise.</span></li>
+        <li><b>Use hypothetical thinking</b><span>If this is true, what else follows?</span></li>
+        <li><b>Test the hypothesis</b><span>How could I check this?</span></li>
+        <li><b>Make a plan</b><span>Think forward: steps, and reasons.</span></li>
+        <li><b>Sum up</b><span>What is the main idea here?</span></li>
+        <li><b>Form categories</b><span>Group things, and name the groups.</span></li>
+      </ol>
+    </div>
+    <div class="col o">
+      <h4><span class="dot"></span> Output</h4>
+      <p class="sub">Getting it out</p>
+      <ol>
+        <li><b>Consider another viewpoint</b><span>Cognitive flexibility — what's it like in your shoes?</span></li>
+        <li><b>Project relationships</b><span>See the non-obvious connection.</span></li>
+        <li><b>Stick to it</b><span>Perseverance; overcoming blocking.</span></li>
+        <li><b>“Just a moment…”</b><span>Pause instead of trial-and-error guessing.</span></li>
+        <li><b>Give a thoughtful response</b><span>Engage mind before mouth.</span></li>
+        <li><b>Use precision and accuracy</b><span>Take the time; complete it properly.</span></li>
+        <li><b>Transport it visually</b><span>Copy accurately; keep things in order.</span></li>
+        <li><b>Show self-control</b><span>Think before speaking or acting.</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <h2>Coaching through a mental block</h2>
+  <div class="spectrum"></div>
+  <p>When a child is stuck, resist the urge to re-explain the content louder. Instead, work the three stages in order — and let the child hear you doing it. This is mediation: you are lending them your thinking process until it becomes theirs.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n">Step 1</div>
+      <h4>Check the input</h4>
+      <div class="say">“Let's pause. What information do we actually have here? Let's read it together, carefully. What exactly is this question asking us to focus on?”</div>
+    </div>
+    <div class="step">
+      <div class="n">Step 2</div>
+      <h4>Guide the elaboration</h4>
+      <div class="say">“What's our plan here? What have we done before that's similar? What details can we safely ignore?”</div>
+    </div>
+    <div class="step">
+      <div class="n">Step 3</div>
+      <h4>Refine the output</h4>
+      <div class="say">“Read your answer out loud to me. Does it clearly explain your thinking to someone else — or should we check it against the question again?”</div>
+    </div>
+  </div>
+
+  <p class="pull">Don't ask “Why aren't you getting this?” Ask “Where is the traffic jam?”</p>
+
+  <h2>An unfolding developmental process</h2>
+  <div class="spectrum"></div>
+  <p>These functions are not switches that are either on or off. They emerge and strengthen as a child grows — which is precisely why observing them <em>over time</em> matters more than judging them in a single moment.</p>
+
+  <div class="unfold">
+    <div class="side">
+      <div class="a">Younger children (≈4–8)</div>
+      <h4>Emerging</h4>
+      <p>Cognitive functions are developing as the brain develops. Expect wobble; mediate generously.</p>
+    </div>
+    <div class="ar">→</div>
+    <div class="side">
+      <div class="a">Older students (≈9–18+)</div>
+      <h4>Strengthening &amp; integrating</h4>
+      <p>Functions consolidate and combine with metacognition — thinking about their own thinking.</p>
+    </div>
+  </div>
+
+  <h2>Why this sits inside Curio</h2>
+  <div class="spectrum"></div>
+  <p>Feuerstein's framework and Curio's method share a spine. Both refuse the verdict ("she's just not a maths person") in favour of the specific, locatable, workable observation ("the instruction never landed cleanly — that's an Input issue, and here's what we do about it"). Both hold that what a child can do is <em>modifiable</em>. And both insist that the way you find out is by watching carefully, over time, with someone who cares standing alongside.</p>
+  <p>That is what a review in Develop is doing when it names a watch-point rather than a score — and what the Brain is doing when it reads a child's history rather than ranking them against strangers.</p>
+
+</div>
+
+<footer><div class="wrap">
+  <div class="spectrum"></div>
+  <p class="attr">Cognitive functions as identified by Prof. Reuven Feuerstein (Structural Cognitive Modifiability). This is an original summary written for Curio families, informed by a parent workshop on cognitive strategies and functions; it reproduces no source text.</p>
+  <p style="font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);margin:.4rem 0 0">Curio · Knowledge Centre</p>
+</div></footer>
+
+</body>
+</html>

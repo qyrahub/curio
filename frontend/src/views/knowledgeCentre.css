@@ -72,3 +72,23 @@
 .kc-empty{ grid-column:1/-1; text-align:center; color:var(--ink-soft); padding:30px; border:1px dashed var(--ring); border-radius:14px; }
 
 @media (prefers-reduced-motion:reduce){ .kc-tile{ transition:none; } .kc-tile:hover{ transform:none; } }
+
+/* One-page learning section — visual left, explanation right */
+.kc-onepage{ margin:30px 0 28px; }
+.kc-op-head{ margin-bottom:14px; }
+.kc-op-eyebrow{ font-family:"JetBrains Mono",ui-monospace,monospace; font-weight:600; font-size:.68rem;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--kc-gold); }
+.kc-op-head h2{ font-family:Fraunces,Fredoka,serif; font-weight:600; font-size:1.5rem; margin:4px 0 3px; }
+.kc-op-dek{ color:var(--ink-soft); margin:0; font-size:.98rem; }
+.kc-op-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+.kc-op-card{ display:grid; grid-template-columns:1fr; background:var(--surface); border:1px solid var(--ring);
+  border-radius:18px; overflow:hidden; }
+@media(min-width:860px){ .kc-op-card{ grid-template-columns:1.35fr 1fr; } }
+.kc-op-preview{ background:#FAF7F2; border-bottom:1px solid var(--ring); height:340px; overflow:hidden; position:relative; }
+@media(min-width:860px){ .kc-op-preview{ border-bottom:0; border-right:1px solid var(--ring); height:auto; min-height:360px; } }
+.kc-op-preview iframe{ width:200%; height:200%; border:0; transform:scale(.5); transform-origin:0 0; pointer-events:none; }
+.kc-op-body{ padding:20px 22px; display:flex; flex-direction:column; justify-content:center; }
+.kc-op-body h3{ font-family:Fraunces,Fredoka,serif; font-weight:600; font-size:1.3rem; margin:0 0 8px; }
+.kc-op-body p{ margin:0 0 16px; color:var(--ink-soft); line-height:1.5; }
+.kc-op-actions{ display:flex; gap:9px; align-items:center; }
+.kc-op-actions .kc-view{ --tile:var(--kc-gold); flex:0 0 auto; padding:9px 20px; }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import "./knowledgeCentre.css";
 
-type Kind = "Article" | "Infographic" | "Working paper";
+type Kind = "Article" | "Infographic" | "Working paper" | "One-page" | "Reference";
 type Audience = "Parent" | "Family";
 type Discipline = "Cognitive" | "School" | "Focus" | "General";
 
@@ -17,10 +17,13 @@ const MATERIALS: Material[] = [
   { id: "article-focus", title: "The ten-minute focus session", blurb: "Attention is a muscle built in short reps. Why fewer minutes, done daily, beat a frustrated hour.", kind: "Article", audience: ["Parent"], discipline: ["Focus"], file: "article-focus.html", mins: "4" },
   { id: "article-worksheet", title: "Reading a worksheet the way Curio does", blurb: "A marked worksheet is a rich signal — if you know how to separate the teacher's ask from the child's answer.", kind: "Article", audience: ["Parent"], discipline: ["School"], file: "article-worksheet.html", mins: "5" },
   { id: "article-evening", title: "When a hard homework evening becomes a data point", blurb: "The tears aren't a verdict — they're information. Lowering the temperature and reading the pattern.", kind: "Article", audience: ["Family"], discipline: ["Focus"], file: "article-evening.html", mins: "4" },
+  { id: "onepage-traffic-jam", title: "Where is the traffic jam?", blurb: "One page: a diagram of how thinking flows through Input, Elaboration and Output — with the explanation beside it.", kind: "One-page", audience: ["Parent", "Family"], discipline: ["Cognitive"], file: "onepage-traffic-jam.html", mins: "3" },
+  { id: "feuerstein-functions", title: "Cognitive strategies & functions", blurb: "Feuerstein's framework in full: the three stages, what each is made of, and how to coach a child through a mental block.", kind: "Working paper", audience: ["Parent", "Family"], discipline: ["Cognitive"], file: "feuerstein-functions.html", mins: "7" },
+  { id: "feuerstein-checklist", title: "Cognitive functions checklist", blurb: "A working reference pairing each growth area with the cognitive function it corresponds to, across all three phases. Tickable.", kind: "Reference", audience: ["Parent", "Family"], discipline: ["Cognitive"], file: "feuerstein-checklist.html", mins: "6" },
 ];
 
-const KIND_COLOR: Record<Kind, string> = { "Article": "var(--kc-teal)", "Infographic": "var(--kc-coral)", "Working paper": "var(--kc-blue)" };
-const KINDS: Kind[] = ["Article", "Infographic", "Working paper"];
+const KIND_COLOR: Record<Kind, string> = { "Article": "var(--kc-teal)", "Infographic": "var(--kc-coral)", "Working paper": "var(--kc-blue)", "One-page": "var(--kc-gold)", "Reference": "var(--kc-blue)" };
+const KINDS: Kind[] = ["Article", "Infographic", "Working paper", "One-page", "Reference"];
 const AUDIENCES: Audience[] = ["Parent", "Family"];
 const DISCIPLINES: Discipline[] = ["Cognitive", "School", "Focus", "General"];
 const path = (f: string) => `/knowledge/${f}`;
@@ -68,6 +71,34 @@ export default function KnowledgeCentre() {
           </div>
         </div>
         <iframe className="kc-frame" src={path("one-diagram.html")} title="Curio at a glance" loading="lazy" />
+      </div>
+
+      {/* one-page learning — visual left, explanation right */}
+      <div className="kc-onepage">
+        <div className="kc-op-head">
+          <div>
+            <div className="kc-op-eyebrow">One-page learning</div>
+            <h2>A single idea, seen and explained</h2>
+            <p className="kc-op-dek">Each one-pager pairs a diagram with the thinking beside it — the whole concept in one sitting.</p>
+          </div>
+        </div>
+        <div className="kc-op-grid">
+          {MATERIALS.filter((m) => m.kind === "One-page").map((m) => (
+            <article className="kc-op-card" key={m.id}>
+              <div className="kc-op-preview">
+                <iframe src={path(m.file)} title={m.title} loading="lazy" scrolling="no" />
+              </div>
+              <div className="kc-op-body">
+                <h3>{m.title}</h3>
+                <p>{m.blurb}</p>
+                <div className="kc-op-actions">
+                  <a className="kc-view" href={path(m.file)} target="_blank" rel="noopener">Open ↗</a>
+                  <a className="kc-dl" href={path(m.file)} download title="Download">↓</a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
 
       {/* library controls */}
