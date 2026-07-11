@@ -62,6 +62,7 @@ export const growth = {
   adminCogbenchPatch: (id: string, b: Partial<CogBench>) => api.adminCogbenchPatch(id, b as Record<string, unknown>).then((r) => r as unknown as CogBench),
   adminCogbenchDel: (id: string) => api.adminCogbenchDel(id),
   adminCogbenchSuggest: (age_group: string, functions: string[]) => api.adminCogbenchSuggest({ age_group, functions }).then((r) => r as unknown as { created: number }),
+  knowledgeFeed: (b: { text?: string; url?: string; source_name?: string }) => api.knowledgeFeed(b as Record<string, unknown>).then((r) => r as unknown as Knowledge),
   knowledge: () => api.knowledge().then((r) => r as unknown as Knowledge[]),
   adminKnowledge: () => api.adminKnowledge().then((r) => r as unknown as Knowledge[]),
   adminKnowledgePut: (b: Partial<Knowledge>) => api.adminKnowledgePut(b as Record<string, unknown>).then((r) => r as unknown as Knowledge),

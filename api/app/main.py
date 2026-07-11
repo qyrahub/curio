@@ -748,6 +748,64 @@ def admin_cogbench_suggest(body: dict, user: dict = Depends(require_admin)) -> d
     return {"created": len(made), "items": made}
 
 
+def _fetch_url_text(url: str, limit: int = 6000) -> str:
+    if not re.match(r"^https?://", url or ""):
+        raise HTTPException(400, "a valid http(s) URL is required")
+    try:
+        r = httpx.get(url, timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (CurioBot)"})
+        html = r.text[:200000]
+    except Exception:
+        raise HTTPException(400, "couldn't fetch that URL")
+    text = re.sub(r"(?is)<(script|style|noscript)[^>]*>.*?</\1>", " ", html)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:limit]
+
+
+@v1.post("/knowledge/feed")
+def knowledge_feed(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    """Feed the shared Brain for real: general/family learning goes into the DURABLE
+    knowledge base as a suggested entry (pending admin approval), so it can genuinely
+    inform guidance for every family. Content is summarised in ORIGINAL words."""
+    b = body or {}
+    content = (b.get("text") or "").strip()
+    url = (b.get("url") or "").strip()
+    source_name = (b.get("source_name") or "").strip()
+    if not content and not url:
+        raise HTTPException(400, "text or url is required")
+    if url and not content:
+        try:
+            content = _fetch_url_text(url)
+        except Exception:
+            raise HTTPException(502, "could not read that link")
+    content = content[:14000]
+    prompt = (
+        "The following material was contributed to a child-development knowledge base that informs parenting "
+        "guidance for every family. Write an ORIGINAL summary in your own words - do NOT quote or reproduce the "
+        "source text. If the material is not about child learning or development, say so in the summary.\n"
+        f"Material:\n{content}\n"
+        'Return ONLY JSON: {"title": string, "tradition": string, "summary": string, "tags": [string]}. '
+        "summary is 2-3 sentences; tradition is the approach/theory it belongs to (e.g. Metacognition, "
+        "Cognitive science) or the empty string; tags are 2-5 short lowercase keywords."
+    )
+    reply = assistant.ask(prompt, "develop")
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {}
+    except Exception:
+        raise HTTPException(502, "could not summarise that material")
+    doc = {"id": f"kb_{uuid.uuid4().hex[:12]}",
+           "title": data.get("title") or source_name or "Contributed material",
+           "tradition": data.get("tradition", ""),
+           "summary": data.get("summary", ""),
+           "source": source_name or url or "Contributed by a parent",
+           "tags": data.get("tags", []) or [],
+           "status": "suggested", "source_type": "feed",
+           "created_at": _now(), "updated_at": _now()}
+    coll_put("knowledge", doc)
+    return doc
+
+
 @v1.get("/knowledge")
 def knowledge_list(user: dict = Depends(get_current_user)) -> list[dict]:
     _seed_knowledge()
@@ -916,17 +974,7 @@ def ask_vision_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
 @v1.post("/fetch-url")
 def fetch_url_ep(body: dict, user: dict = Depends(get_current_user)) -> dict:
     url = ((body or {}).get("url") or "").strip()
-    if not re.match(r"^https?://", url):
-        raise HTTPException(400, "a valid http(s) URL is required")
-    try:
-        r = httpx.get(url, timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 (CurioBot)"})
-        html = r.text[:200000]
-    except Exception:
-        raise HTTPException(400, "couldn't fetch that URL")
-    text = re.sub(r"(?is)<(script|style|noscript)[^>]*>.*?</\1>", " ", html)
-    text = re.sub(r"(?s)<[^>]+>", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return {"text": text[:6000]}
+    return {"text": _fetch_url_text(url)}
 
 
 app.mount("/v1", v1)

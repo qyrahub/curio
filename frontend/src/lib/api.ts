@@ -95,6 +95,7 @@ export const api = {
   adminCogbenchPatch: (id: string, body: Record<string, unknown>) => http<Record<string, unknown>>(`/admin/cogbench/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   adminCogbenchDel: (id: string) => http<{ deleted: number }>(`/admin/cogbench/${id}`, { method: "DELETE" }),
   adminCogbenchSuggest: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/cogbench/suggest", { method: "POST", body: JSON.stringify(body) }),
+  knowledgeFeed: (body: Record<string, unknown>) => http<Record<string, unknown>>("/knowledge/feed", { method: "POST", body: JSON.stringify(body) }),
   knowledge: () => http<Record<string, unknown>[]>("/knowledge"),
   adminKnowledge: () => http<Record<string, unknown>[]>("/admin/knowledge"),
   adminKnowledgePut: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge", { method: "POST", body: JSON.stringify(body) }),
