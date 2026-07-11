@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
+import { classifyErr, LoadGate, type LoadErr } from "../components/LoadGate";
 import { speak, stopSpeaking, speechSupported } from "../lib/speech";
 import { sfx, startMusic, stopMusic, isMuted, toggleMute, playNote } from "../lib/sound";
 import type { CanvasTool, CanvasTools, WorkbenchAsset } from "../types";
@@ -2000,8 +2001,15 @@ const HOUSE_TILE: CanvasTool = { name: "Bob", color: "#5BBF8A", icon: "🏠", ti
 export default function Canvas() {
   const [tools, setTools] = useState<CanvasTools | null>(null);
   const [active, setActive] = useState<CanvasTool | null>(null);
-  useEffect(() => { api.canvasTools().then(setTools).catch(() => {}); }, []);
-  if (!tools) return <div className="view"><p className="muted">Loading…</p></div>;
+  const [cerr, setCerr] = useState<LoadErr>("");
+  const [ctries, setCtries] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setCerr("");
+    api.canvasTools().then((t) => { if (alive) setTools(t); }).catch((e: unknown) => { if (alive) setCerr(classifyErr(e)); });
+    return () => { alive = false; };
+  }, [ctries]);
+  if (!tools) return <LoadGate err={cerr} retry={() => setCtries((t) => t + 1)} what="Canvas" />;
   const section = (title: string, items: CanvasTool[]) => (
     <div className="block">
       <h3>{title}</h3>

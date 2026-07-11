@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { brand } from "../lib/brand";
 import PageHero from "../components/PageHero";
 import { api } from "../lib/api";
+import { classifyErr, LoadGate, type LoadErr } from "../components/LoadGate";
 import { speak, stopSpeaking, speechSupported } from "../lib/speech";
 import type { Book, BookDetail, LibraryFacets, LibraryFilters } from "../types";
 
@@ -13,7 +14,14 @@ export default function Library() {
   const [open, setOpen] = useState<BookDetail | null>(null);
   const [browsing, setBrowsing] = useState(false);
 
-  useEffect(() => { api.libraryFacets().then(setFacets).catch(() => {}); }, []);
+  const [lerr, setLerr] = useState<LoadErr>("");
+  const [tries, setTries] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setLerr("");
+    api.libraryFacets().then((f) => { if (alive) setFacets(f); }).catch((e: unknown) => { if (alive) setLerr(classifyErr(e)); });
+    return () => { alive = false; };
+  }, [tries]);
   useEffect(() => {
     if (!browsing) return;
     api.libraryCatalog(filters).then((r) => { setItems(r.items); setTotal(r.total); }).catch(() => {});
@@ -24,7 +32,7 @@ export default function Library() {
 
   const openCategory = (key: string) => { setFilters({ category: key }); setBrowsing(true); };
 
-  if (!facets) return <div className="view"><p className="muted">Loading…</p></div>;
+  if (!facets) return <LoadGate err={lerr} retry={() => setTries((t) => t + 1)} what="the library" />;
 
   return (
     <div className="view">
