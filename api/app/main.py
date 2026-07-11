@@ -674,6 +674,80 @@ def _seed_knowledge():
             coll_put("knowledge", d)
 
 
+@v1.get("/cogbench")
+def cogbench_list(user: dict = Depends(get_current_user)) -> list[dict]:
+    return coll_list("cogbench", {"status": "approved"})
+
+
+@v1.get("/admin/cogbench")
+def admin_cogbench(user: dict = Depends(require_admin)) -> list[dict]:
+    return coll_list("cogbench", {})
+
+
+@v1.post("/admin/cogbench")
+def admin_cogbench_put(body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = dict(body or {})
+    if not doc.get("fn_id") or doc.get("value") is None:
+        raise HTTPException(400, "fn_id and value are required")
+    doc.setdefault("id", f"cb_{uuid.uuid4().hex[:12]}")
+    doc.setdefault("age_group", "")
+    doc.setdefault("status", "approved")
+    doc.setdefault("created_at", _now())
+    doc["updated_at"] = _now()
+    coll_put("cogbench", doc)
+    return doc
+
+
+@v1.patch("/admin/cogbench/{cid}")
+def admin_cogbench_patch(cid: str, body: dict, user: dict = Depends(require_admin)) -> dict:
+    doc = coll_get("cogbench", {"id": cid})
+    if not doc:
+        raise HTTPException(404, "not found")
+    for k in ("fn_id", "age_group", "value", "status", "note"):
+        if k in (body or {}):
+            doc[k] = body[k]
+    doc["updated_at"] = _now()
+    coll_put("cogbench", doc)
+    return doc
+
+
+@v1.delete("/admin/cogbench/{cid}")
+def admin_cogbench_del(cid: str, user: dict = Depends(require_admin)) -> dict:
+    return {"deleted": coll_delete("cogbench", {"id": cid})}
+
+
+@v1.post("/admin/cogbench/suggest")
+def admin_cogbench_suggest(body: dict, user: dict = Depends(require_admin)) -> dict:
+    age = (body or {}).get("age_group") or ""
+    fns = (body or {}).get("functions") or []
+    if not age or not fns:
+        raise HTTPException(400, "age_group and functions are required")
+    prompt = (
+        f"For a typical child aged {age}, estimate a TYPICAL-FOR-AGE reference level (0-100) for each of these "
+        f"Feuerstein cognitive functions. These are developmental reference points for parents, NOT measured percentiles "
+        f"and NOT a ranking of any individual child. Be conservative and developmentally realistic.\n"
+        f"Functions: {json.dumps(fns)}\n"
+        f'Return ONLY JSON: {{"values": {{"<fn_id>": <0-100>, ...}}}}'
+    )
+    reply = assistant.ask(prompt, "develop")
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {}
+    except Exception:
+        raise HTTPException(502, "could not draft benchmarks")
+    made = []
+    for fid, val in (data.get("values") or {}).items():
+        try:
+            v = max(0, min(100, int(val)))
+        except Exception:
+            continue
+        doc = {"id": f"cb_{uuid.uuid4().hex[:12]}", "fn_id": fid, "age_group": age, "value": v,
+               "status": "suggested", "created_at": _now(), "updated_at": _now()}
+        coll_put("cogbench", doc)
+        made.append(doc)
+    return {"created": len(made), "items": made}
+
+
 @v1.get("/knowledge")
 def knowledge_list(user: dict = Depends(get_current_user)) -> list[dict]:
     _seed_knowledge()

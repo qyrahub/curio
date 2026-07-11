@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { askJSON, askVisionJSON } from "../lib/ai";
 import { api } from "../lib/api";
 import { extractFileText } from "../lib/fileParse";
+import { FUNCTIONS } from "../lib/feuerstein";
 import { growth, feedBrain, NEED_STATUS, type GrowthNeed, type ReviewCycle } from "../lib/growth";
 import { useGantt, newGanttItem } from "../lib/devstore";
 import GanttChart from "./GanttChart";
@@ -27,7 +28,7 @@ const AREAS = ["Focus & attention", "Reading", "Writing", "Maths", "Behaviour & 
 const NUDGES = ["Happens at homework time", "Worse when tired", "School has flagged it", "Affects the whole family", "Better with 1:1 support", "Getting worse recently", "Only in certain subjects", "Started this term"];
 
 interface Item { point: string; implication: string; }
-interface Result { summary: string; working: Item[]; watch: Item[]; recommendations: { task: string; focus: string; durationDays: number }[]; issues: string[]; strengths: string[]; }
+interface Result { summary: string; working: Item[]; watch: Item[]; recommendations: { task: string; focus: string; durationDays: number }[]; issues: string[]; strengths: string[]; cog?: Record<string, number>; }
 const DISC = "This is practical guidance to support your parenting — not a diagnosis or medical advice.";
 
 function pImg(p: string) { return "The parent has ATTACHED A PHOTO you can see (typed/printed text = the teacher's instructions/task; handwriting = the child's own answers). Read it first; do not ask about anything already visible in it. " + p; }
@@ -169,7 +170,10 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
       catch { setErr("Couldn't fetch that URL — check it and try again."); setBusy(false); return; }
     }
     const src = isPhoto ? "The parent has attached a PHOTO of the child's school work. IMPORTANT: typed/printed text in the image is the TEACHER's instructions/task; handwritten text is the CHILD's own answers. Read BOTH carefully, judge how well the child actually followed each instruction - cite specifics of what they did well and exactly where they went wrong - and base the working/watch/recommendations on that concrete evidence, not generalities." : "";
-    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\n${knowledgeCtx ? "Where relevant, ground your advice in these established child-development approaches: " + knowledgeCtx + ". " : ""}Produce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}], "issues": [string], "strengths": [string]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations. For "issues" pick 1-5 tags that genuinely apply from EXACTLY this list: ${ISSUE_TAGS.join(", ")}. For "strengths" pick 1-4 from this list: ${STRENGTH_TAGS.join(", ")}. Prefer tags from these lists for consistency, BUT you may add a NEW concise Title-Case theme (1-3 words) if something genuinely important is not covered (e.g. Public speaking, Leadership, Sports, Social skills, Time management). Keep tags short and reusable.`;
+    const p = `You are a paediatric learning & development planning assistant helping a PARENT. This is guidance, not diagnosis. ${ctxLine(ctx)}\nLikes: ${ctx.likes.join(", ") || "—"}. Dislikes: ${ctx.dislikes.join(", ") || "—"}.\n${src}\nNeed (area: ${areaValue}): "${material || "(see attached image)"}". Context flags: ${picked.join(", ") || "none"}. Clarifications: ${history.map((h) => `${h.q} → ${h.a}`).join(" | ") || "none"}.\n${knowledgeCtx ? "Where relevant, ground your advice in these established child-development approaches: " + knowledgeCtx + ". " : ""}Produce a SPECIFIC, tailored plan (avoid generic filler; use evidence-based strategies). Return ONLY JSON: {"summary": string, "working": [{"point": string, "implication": string}], "watch": [{"point": string, "implication": string}], "recommendations": [{"task": string, "focus": string, "durationDays": number}], "issues": [string], "strengths": [string]}. 2-4 items in working and watch (implication = why it matters / the benefit); 4-6 recommendations. For "issues" pick 1-5 tags that genuinely apply from EXACTLY this list: ${ISSUE_TAGS.join(", ")}. For "strengths" pick 1-4 from this list: ${STRENGTH_TAGS.join(", ")}. Prefer tags from these lists for consistency, BUT you may add a NEW concise Title-Case theme (1-3 words) if something genuinely important is not covered (e.g. Public speaking, Leadership, Sports, Social skills, Time management). Keep tags short and reusable.
+ALSO assess Feuerstein cognitive functions ONLY where this specific evidence genuinely supports a judgement. Return "cog" as an object mapping function id -> score 0-100 (higher = stronger). OMIT any function the material gives you no real evidence about — do NOT guess or fill them in. Typically 3-8 functions. Available functions (id: what it looks like when working):
+${FUNCTIONS.map((f) => `${f.id} (${f.phase}) ${f.name}: ${f.fn}`).join("; ")}
+Add "cog" to the JSON object.`;
     const j = isPhoto ? await askVisionJSON<Result>(p, imgData, imgType) : await askJSON<Result>(p);
     setBusy(false);
     const r = j && Array.isArray(j.recommendations) && j.recommendations.length ? j : fallback(areaValue, ctx);
@@ -206,6 +210,7 @@ export default function GrowthFlow({ ctx, accent, onGoInsights }: { ctx: FlowCtx
     try {
       await growth.putNeed({ child_id: ctx.id, title: text.slice(0, 140), area: areaValue, status: "working" });
       await growth.putReview({
+        cog: review?.cog || {},
         child_id: ctx.id, period: new Date().toISOString().slice(0, 10),
         summary: review?.summary || text.slice(0, 200),
         achieved: doneItems.map((g) => g.task), not_achieved: items.filter((g) => !doneItems.includes(g)).map((g) => g.task),

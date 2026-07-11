@@ -8,6 +8,7 @@ import IssuesTimeline from "../components/IssuesTimeline";
 import IntelligencePanel from "../components/IntelligencePanel";
 import ProfileWheel from "../components/ProfileWheel";
 import KnowledgePanel from "../components/KnowledgePanel";
+import CogPanel from "../components/CogPanel";
 import BenchmarkRadars from "../components/BenchmarkRadars";
 import ValueTiles from "../components/ValueTiles";
 
@@ -258,6 +259,13 @@ export default function Insights() {
       <section className="ins-sec">
         <div className="ins-sec-head"><span className="ins-num">◍</span><h2>{focus.name}'s profile wheel</h2></div>
         <ProfileWheel childId={focus.id} childName={focus.name} />
+      </section>
+
+      {/* cognitive functions — ring-fenced (Feuerstein) */}
+      <section className="ins-sec">
+        <div className="ins-sec-head"><span className="ins-num">◎</span><h2>{focus.name}'s cognitive functions</h2></div>
+        <p className="muted" style={{ marginTop: 0 }}>Where thinking flows and where it jams — across Feuerstein's three phases: Input (gathering), Elaboration (thinking), Output (expressing). Scored from real reviews only.</p>
+        <CogPanel childId={focus.id} childName={focus.name} />
       </section>
 
       {/* section 0c3 — knowledge base that informs guidance */}

@@ -12,10 +12,11 @@ export const NEED_STATUS: { key: NeedStatus; label: string; color: string }[] = 
 ];
 
 export interface GrowthNeed { id: string; child_id: string; title: string; area: string; status: NeedStatus; note?: string; created_at?: string; updated_at?: string; }
-export interface ReviewCycle { id: string; child_id: string; period: string; summary: string; achieved: string[]; not_achieved: string[]; improvements: string[]; next: string[]; scores?: Record<string, number>; issues?: string[]; strengths?: string[]; created_at?: string; }
+export interface ReviewCycle { id: string; child_id: string; period: string; summary: string; achieved: string[]; not_achieved: string[]; improvements: string[]; next: string[]; scores?: Record<string, number>; issues?: string[]; strengths?: string[]; cog?: Record<string, number>; created_at?: string; }
 export interface Evaluation { id: string; child_id: string; title: string; source_text: string; summary: string; working: string[]; watch: string[]; recommendations: { task: string; focus: string; durationDays: number }[]; created_at?: string; }
 export interface Portrait { id: string; child_id: string; summary: string; strengths: string[]; challenges: string[]; improving: string[]; watch: string[]; inputs?: number; created_at?: string; }
 export interface FeedbackItem { id: string; user_id?: string; email?: string; kind: "feedback" | "feature"; message: string; status: string; admin_note?: string; notified?: boolean; created_at?: string; }
+export interface CogBench { id: string; fn_id: string; age_group?: string; value: number; status: string; note?: string; }
 export interface Knowledge { id: string; title: string; tradition?: string; summary: string; source?: string; tags?: string[]; status: string; source_type?: string; }
 export interface Benchmark { id: string; scope: "world" | "country"; country?: string; age_group: string; theme: string; value: number; status: string; source?: string; }
 export interface ReleaseItem { id: string; title: string; source_id?: string; status: string; start?: string; end?: string; progress?: number; created_at?: string; }
@@ -55,6 +56,12 @@ export const growth = {
   adminBenchSuggest: (b: { scope: string; country?: string; age_group: string; themes: string[] }) => api.adminBenchSuggest(b as Record<string, unknown>).then((r) => r as unknown as Benchmark[]),
   adminBenchConfigGet: () => api.adminBenchConfigGet().then((r) => r as unknown as { frequency: string }),
   adminBenchConfigSet: (frequency: string) => api.adminBenchConfigSet({ frequency }).then((r) => r as unknown as { frequency: string }),
+  cogbench: () => api.cogbench().then((r) => r as unknown as CogBench[]),
+  adminCogbench: () => api.adminCogbench().then((r) => r as unknown as CogBench[]),
+  adminCogbenchPut: (b: Partial<CogBench>) => api.adminCogbenchPut(b as Record<string, unknown>).then((r) => r as unknown as CogBench),
+  adminCogbenchPatch: (id: string, b: Partial<CogBench>) => api.adminCogbenchPatch(id, b as Record<string, unknown>).then((r) => r as unknown as CogBench),
+  adminCogbenchDel: (id: string) => api.adminCogbenchDel(id),
+  adminCogbenchSuggest: (age_group: string, functions: string[]) => api.adminCogbenchSuggest({ age_group, functions }).then((r) => r as unknown as { created: number }),
   knowledge: () => api.knowledge().then((r) => r as unknown as Knowledge[]),
   adminKnowledge: () => api.adminKnowledge().then((r) => r as unknown as Knowledge[]),
   adminKnowledgePut: (b: Partial<Knowledge>) => api.adminKnowledgePut(b as Record<string, unknown>).then((r) => r as unknown as Knowledge),
