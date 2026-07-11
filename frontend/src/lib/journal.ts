@@ -1,12 +1,15 @@
 import { api } from "./api";
 
-export interface JournalEntry { id: string; scope: "child" | "family" | "general"; child_id?: string; text: string; mood?: string; created_at?: string; }
+export interface JournalEntry { id: string; scope: "child" | "family" | "general"; child_id?: string; text: string; mood?: string; entry_date?: string; planned_for?: string; created_at?: string; }
+export interface JournalSummary { enough: boolean; count: number; child: string; parent: string; family: string; }
 export interface JournalTheme { theme: string; trend: string; }
 export interface JournalPatterns { summary: string; themes: JournalTheme[]; watch: string[]; count?: number; }
 
 export const journal = {
   list: (scope?: string, childId?: string) => api.journalList(scope, childId).then((r) => r as unknown as JournalEntry[]),
-  add: (e: { scope: string; child_id?: string; text: string; mood?: string }) => api.journalAdd(e as Record<string, unknown>).then((r) => r as unknown as JournalEntry),
+  add: (e: { scope: string; child_id?: string; text: string; mood?: string; entry_date?: string }) => api.journalAdd(e as Record<string, unknown>).then((r) => r as unknown as JournalEntry),
+  patch: (id: string, b: Partial<JournalEntry>) => api.journalPatch(id, b as Record<string, unknown>).then((r) => r as unknown as JournalEntry),
+  summary: (since: string) => api.journalSummary({ since }).then((r) => r as unknown as JournalSummary),
   del: (id: string) => api.journalDel(id),
   patterns: (b: { scope?: string; child_id?: string; who?: string }) => api.journalPatterns(b as Record<string, unknown>).then((r) => r as unknown as JournalPatterns),
 };

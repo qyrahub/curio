@@ -106,6 +106,8 @@ export const api = {
   adminKnowledgeConfigSet: (body: Record<string, unknown>) => http<Record<string, unknown>>("/admin/knowledge/config", { method: "POST", body: JSON.stringify(body) }),
   journalList: (scope?: string, childId?: string) => http<Record<string, unknown>[]>(`/journal?${new URLSearchParams({ ...(scope ? { scope } : {}), ...(childId ? { child_id: childId } : {}) }).toString()}`),
   journalAdd: (body: Record<string, unknown>) => http<Record<string, unknown>>("/journal", { method: "POST", body: JSON.stringify(body) }),
+  journalPatch: (id: string, body: Record<string, unknown>) => http<Record<string, unknown>>(`/journal/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  journalSummary: (body: Record<string, unknown>) => http<Record<string, unknown>>("/journal/summary", { method: "POST", body: JSON.stringify(body) }),
   journalDel: (id: string) => http<{ deleted: number }>(`/journal/${id}`, { method: "DELETE" }),
   journalPatterns: (body: Record<string, unknown>) => http<Record<string, unknown>>("/journal/patterns", { method: "POST", body: JSON.stringify(body) }),
 };

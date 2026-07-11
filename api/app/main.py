@@ -914,10 +914,25 @@ def journal_put(body: dict, user: dict = Depends(get_current_user)) -> dict:
         raise HTTPException(400, "invalid scope")
     if scope == "child" and not b.get("child_id"):
         raise HTTPException(400, "child_id is required for child entries")
+    entry_date = (b.get("entry_date") or "")[:10] or _now()[:10]
     doc = {"id": f"jr_{uuid.uuid4().hex[:12]}", "user_id": uid, "scope": scope,
            "child_id": b.get("child_id") if scope == "child" else "",
            "text": text[:4000], "mood": (b.get("mood") or "")[:24],
+           "entry_date": entry_date, "planned_for": (b.get("planned_for") or "")[:10],
            "created_at": _now(), "updated_at": _now()}
+    coll_put("journal", doc)
+    return doc
+
+
+@v1.patch("/journal/{jid}")
+def journal_patch(jid: str, body: dict, user: dict = Depends(get_current_user)) -> dict:
+    doc = coll_get("journal", {"user_id": _uid(user), "id": jid})
+    if not doc:
+        raise HTTPException(404, "not found")
+    for k in ("text", "mood", "entry_date", "planned_for"):
+        if k in (body or {}):
+            doc[k] = body[k]
+    doc["updated_at"] = _now()
     coll_put("journal", doc)
     return doc
 
@@ -955,6 +970,44 @@ def journal_patterns(body: dict, user: dict = Depends(get_current_user)) -> dict
     except Exception:
         return {"summary": "Could not read the patterns just now — try again.", "themes": [], "watch": []}
     return {"summary": data.get("summary", ""), "themes": data.get("themes", []) or [], "watch": data.get("watch", []) or [], "count": len(entries)}
+
+
+@v1.post("/journal/summary")
+def journal_summary(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    """Synthesise what the journal has taught us over a period. Honest: derived only
+    from real entries; if there is too little, say so rather than invent."""
+    uid = _uid(user)
+    b = body or {}
+    since = (b.get("since") or "")[:10]
+    entries = coll_list("journal", {"user_id": uid})
+    if since:
+        entries = [e for e in entries if (e.get("entry_date") or e.get("created_at", "")[:10]) >= since]
+    entries.sort(key=lambda e: e.get("entry_date") or e.get("created_at", ""))
+    if len(entries) < 3:
+        return {"enough": False, "child": "", "parent": "", "family": "", "count": len(entries)}
+    lines = []
+    for e in entries[-80:]:
+        who = "child" if e.get("scope") == "child" else e.get("scope", "family")
+        lines.append(f"- [{e.get('entry_date') or e.get('created_at','')[:10]}] ({who}) {e.get('text','')}")
+    joined = "\n".join(lines)
+    prompt = (
+        "These are a parent's journal entries over a period. Say honestly what has been LEARNT and where things "
+        "have IMPROVED (or not). Base everything ONLY on the entries. Write plainly and warmly, 2-3 sentences per "
+        "area. If an area has too little to say, say so rather than inventing.\n"
+        f"Entries (oldest first):\n{joined}\n"
+        'Return ONLY JSON: {"child": string, "parent": string, "family": string}. '
+        "child = what we have learnt about the children and how they have improved. "
+        "parent = what the parent has learnt about themselves and their approach. "
+        "family = what has been learnt about the family as a whole."
+    )
+    reply = assistant.ask(prompt, "develop")
+    try:
+        a, z = reply.find("{"), reply.rfind("}")
+        data = json.loads(reply[a:z + 1]) if a >= 0 and z > a else {}
+    except Exception:
+        return {"enough": False, "child": "", "parent": "", "family": "", "count": len(entries)}
+    return {"enough": True, "count": len(entries),
+            "child": data.get("child", ""), "parent": data.get("parent", ""), "family": data.get("family", "")}
 
 
 @v1.post("/ask-vision")
