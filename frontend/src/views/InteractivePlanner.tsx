@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { api } from "../lib/api";
 import { useProfile, THEMES, type ThemeKey } from "../lib/profile";
 
@@ -7,6 +7,35 @@ import { useProfile, THEMES, type ThemeKey } from "../lib/profile";
    rings/bars, and editable priorities, tasks, schedule, notes and reflections.
    State persists locally; once the Brain feeds real completion it can drive
    the rings instead of manual ticks. */
+
+/* Auto-growing textarea used for every planner-cell text field. Fixes the
+   long-text cropping problem: 7 columns × ~130px each didn't leave room for
+   anything past ~16 characters when the fields were single-line <input>s.
+   Wraps naturally, height re-measured on every value change, hover title
+   surfaces the full text as a tooltip when scanning quickly. */
+function AutoTextarea({ value, onChange, className, placeholder, style }: {
+  value: string; onChange: (v: string) => void; className?: string; placeholder?: string; style?: CSSProperties;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      className={className}
+      title={value || undefined}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={style}
+    />
+  );
+}
 
 interface Task { id: string; text: string; done: boolean; }
 interface Slot { id: string; time: string; text: string; done: boolean; }
@@ -280,13 +309,13 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
           return (
             <div className="ip-card" key={i} style={{ borderColor: col.acc }}>
               <div className="ip-card-h" style={{ background: col.light }}>{DAYNAMES[i]}<span className="ip-card-date">{dayDate(i)}</span></div>
-              <input className="ip-intent" value={d.intent} style={{ color: col.acc }} onChange={(e) => patchDay(i, (x) => ({ ...x, intent: e.target.value }))} />
+              <AutoTextarea className="ip-intent" value={d.intent} style={{ color: col.acc }} onChange={(v) => patchDay(i, (x) => ({ ...x, intent: v }))} />
               <div className="ip-card-ring"><Donut pct={st.pct} color={col.acc} size={104} /><span className="ip-dp">Daily Progress</span></div>
 
               <div className="ip-sec" style={{ background: col.light }}>Top 3 Priorities</div>
               {d.priorities.map((p, pi) => (
                 <div className="ip-prio" key={pi}><b style={{ color: col.acc }}>{pi + 1}</b>
-                  <input value={p} onChange={(e) => patchDay(i, (x) => ({ ...x, priorities: x.priorities.map((v, j) => (j === pi ? e.target.value : v)) }))} /></div>
+                  <AutoTextarea value={p} onChange={(v) => patchDay(i, (x) => ({ ...x, priorities: x.priorities.map((val, j) => (j === pi ? v : val)) }))} /></div>
               ))}
 
               <div className="ip-sec" style={{ background: col.light }}>Tasks</div>
@@ -294,7 +323,7 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                 <div className={"ip-task" + (tk.done ? " done" : "")} key={tk.id}>
                   <button className={"ip-check" + (tk.done ? " on" : "")} style={tk.done ? { background: col.acc, borderColor: col.acc } : undefined}
                     onClick={() => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((v) => (v.id === tk.id ? { ...v, done: !v.done } : v)) }))}>{tk.done ? "✓" : ""}</button>
-                  <input value={tk.text} onChange={(e) => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((v) => (v.id === tk.id ? { ...v, text: e.target.value } : v)) }))} />
+                  <AutoTextarea value={tk.text} onChange={(v) => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((val) => (val.id === tk.id ? { ...val, text: v } : val)) }))} />
                   <button className="ip-x" onClick={() => patchDay(i, (x) => ({ ...x, tasks: x.tasks.filter((v) => v.id !== tk.id) }))}>✕</button>
                 </div>
               ))}
@@ -309,7 +338,7 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
               {d.schedule.map((s) => (
                 <div className={"ip-slot" + (s.done ? " done" : "")} key={s.id}>
                   <input className="ip-time" value={s.time} onChange={(e) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, time: e.target.value } : v)) }))} />
-                  <input className="ip-slot-text" value={s.text} placeholder="…" onChange={(e) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, text: e.target.value } : v)) }))} />
+                  <AutoTextarea className="ip-slot-text" value={s.text} placeholder="…" onChange={(v) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((val) => (val.id === s.id ? { ...val, text: v } : val)) }))} />
                   <button className={"ip-check" + (s.done ? " on" : "")} style={s.done ? { background: col.acc, borderColor: col.acc } : undefined}
                     onClick={() => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, done: !v.done } : v)) }))}>{s.done ? "✓" : ""}</button>
                 </div>
@@ -321,7 +350,7 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                   <div className="ip-sec" style={{ background: col.light }}>{label}</div>
                   {(d[key] as string[]).map((line, li) => (
                     <div className="ip-line" key={li}><b>{li + 1}</b>
-                      <input value={line} onChange={(e) => patchDay(i, (x) => ({ ...x, [key]: (x[key] as string[]).map((v, j) => (j === li ? e.target.value : v)) }))} /></div>
+                      <AutoTextarea value={line} onChange={(v) => patchDay(i, (x) => ({ ...x, [key]: (x[key] as string[]).map((val, j) => (j === li ? v : val)) }))} /></div>
                   ))}
                 </div>
               ))}
