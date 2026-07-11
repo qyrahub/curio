@@ -239,26 +239,12 @@ export function SectionArt({ kind }: { kind: string }) {
    The Home preview card was hardcoded to a butterfly life-cycle — charming at 4,
    condescending at 16. It now matures with the child, content and art together. */
 
-export interface Preview { topic: string; lead: string; small: string; challenge: string; }
-
-const PREVIEWS: Record<Tier, Preview> = {
-  1: { topic: "Biology · The Butterfly", lead: "A caterpillar becomes a butterfly!", small: "It starts as a tiny egg, grows into a hungry caterpillar, rests in a chrysalis, then opens its wings.", challenge: "Point to each stage in order. What changes inside the chrysalis?" },
-  2: { topic: "Biology · The Butterfly", lead: "A caterpillar becomes a butterfly!", small: "Egg, caterpillar, chrysalis, butterfly — four stages, each one a big change.", challenge: "Can you name all four stages without looking?" },
-  3: { topic: "Biology · Life cycles", lead: "Why do some animals change shape completely?", small: "Metamorphosis lets one animal live two different lives — one for eating and growing, one for moving and breeding.", challenge: "Name another animal that changes completely. What does each stage do best?" },
-  4: { topic: "Science · Cause and effect", lead: "What actually drives a change?", small: "Good thinking separates what caused something from what merely happened alongside it.", challenge: "Find one thing that changed this week. What caused it — and how would you check?" },
-  5: { topic: "Science · Evidence", lead: "How do you know that's true?", small: "A claim is only as strong as what supports it. Evidence turns an opinion into an argument.", challenge: "Take a claim you believe. What evidence would change your mind?" },
-  6: { topic: "Reasoning · Building an argument", lead: "Claim, evidence, reasoning.", small: "The strongest answers state the claim, show the evidence, and explain why the evidence supports it.", challenge: "Write one paragraph with all three parts. Cut anything that isn't doing work." },
-  7: { topic: "Reasoning · Testing your thinking", lead: "Where could you be wrong?", small: "Mature thinking actively looks for the weakness in its own case, rather than defending it.", challenge: "Argue the strongest version of the opposing view. What survives?" },
-};
-
-export function usePreview(): { preview: Preview; tier: Tier } {
-  const { activeChild, focusChild } = useProfile();
-  const tier = tierOf((activeChild || focusChild)?.age);
-  return { preview: PREVIEWS[tier], tier };
-}
-
-/** Art for the preview card — the life-cycle for the little ones, a concept
-    diagram for everyone else. */
+/** Art for the preview card — a text-free "wonder" illustration that matures
+    with the child. Text-free by design so no hardcoded ink colour can ever go
+    invisible in dark mode again (that was the old bug where "Claim" and
+    "Evidence" vanished on the dark backdrop). The rotating daily content —
+    topic tag, hook, small print, try-this / did-you-know body — lives in
+    lib/wonderPool.ts and is consumed via useWonder() in Home.tsx. */
 export function PreviewArt() {
   const { activeChild, focusChild } = useProfile();
   const child = activeChild || focusChild;
@@ -267,42 +253,89 @@ export function PreviewArt() {
   const t = child ? THEMES[child.theme] : null;
   const a = t?.accent || "#FF7A66";
   const d = t?.deep || "#F2563D";
-  const ink = "#2C2A4A";
 
-  if (tier <= 3) {
-    // egg -> caterpillar -> chrysalis -> butterfly, on a branch
+  // Tier 1–2: friendly "wonder sun" — big smiley orb, rays, sparkles.
+  if (tier <= 2) {
     return (
-      <svg viewBox="0 0 260 150" role="img" aria-label="Butterfly life cycle">
-        <path d="M20 116q60 12 110-4t112 2" stroke="#8B5E3C" strokeWidth="6" fill="none" strokeLinecap="round" />
-        <ellipse cx="44" cy="104" rx="8" ry="10" fill="#F6C453" />
-        <text x="44" y="136" textAnchor="middle" fontSize="9" fill={ink} opacity=".7">egg</text>
-        <g>{[0, 1, 2, 3].map((i) => <circle key={i} cx={96 + i * 11} cy={102} r="7" fill="#7BB661" />)}
-          <circle cx="134" cy="100" r="2" fill={ink} /></g>
-        <text x="115" y="136" textAnchor="middle" fontSize="9" fill={ink} opacity=".7">caterpillar</text>
-        <path d="M172 88q12 6 12 18t-12 14q-12-2-12-14t12-18z" fill="#9CCB8E" />
-        <text x="172" y="136" textAnchor="middle" fontSize="9" fill={ink} opacity=".7">chrysalis</text>
-        <g transform="translate(214,74)">
-          <path d="M0 6q-14-16-20 0t20 8z" fill={a} /><path d="M0 6q14-16 20 0t-20 8z" fill={d} />
-          <path d="M-4 -4l4 8 4-8" stroke={ink} strokeWidth="1.4" fill="none" />
-        </g>
-        <text x="214" y="110" textAnchor="middle" fontSize="9" fill={ink} opacity=".7">butterfly</text>
+      <svg viewBox="0 0 260 180" role="img" aria-label="A wonder">
+        {/* Rays */}
+        {Array.from({ length: 8 }).map((_, i) => {
+          const ang = (i * Math.PI * 2) / 8;
+          const x1 = 130 + Math.cos(ang) * 48, y1 = 90 + Math.sin(ang) * 48;
+          const x2 = 130 + Math.cos(ang) * 66, y2 = 90 + Math.sin(ang) * 66;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={a} strokeWidth="5" strokeLinecap="round" opacity=".55" />;
+        })}
+        {/* Orb */}
+        <circle cx="130" cy="90" r="42" fill={a} />
+        <circle cx="130" cy="90" r="42" fill={d} opacity=".18" />
+        {r.faces && <Face x={130} y={86} c="#3B2A2A" />}
+        {/* Sparkles */}
+        <Sparkle x={54}  y={38}  s={1.1} c={d} />
+        <Sparkle x={214} y={44}  s={0.9} c={d} />
+        <Sparkle x={220} y={140} s={1}   c={a} />
+        <Sparkle x={46}  y={140} s={0.9} c={a} />
       </svg>
     );
   }
 
-  // older: a clean concept diagram — claim / evidence / reasoning
-  // (viewBox must be tall enough for all three rows: the third row is centred at
-  // y=166 with half-height 14, so its bottom edge sits at 180 — a 150-tall viewBox
-  // was clipping "Reasoning" off entirely, leaving Claim/Evidence looking unfinished)
+  // Tier 3–4: stylised lightbulb with dotted rays.
+  if (tier <= 4) {
+    return (
+      <svg viewBox="0 0 260 180" role="img" aria-label="A wonder">
+        {/* Rays as dots — cleaner than lines at this age */}
+        {Array.from({ length: 10 }).map((_, i) => {
+          const ang = -Math.PI / 2 + (i - 4.5) * (Math.PI / 10);
+          const dist = 62;
+          return <circle key={i} cx={130 + Math.cos(ang) * dist} cy={78 + Math.sin(ang) * dist} r="2.4" fill={a} opacity=".7" />;
+        })}
+        {/* Bulb */}
+        <path d="M130 42a34 34 0 0 1 22 60c-4 4-6 8-6 12v6h-32v-6c0-4-2-8-6-12a34 34 0 0 1 22-60z"
+              fill={a} fillOpacity={r.fill * 0.35} stroke={a} strokeWidth={r.stroke} />
+        {/* Filament — heart-ish for tier 3, cleaner spark for tier 4 */}
+        {tier === 3
+          ? <path d="M122 82c0-6 8-6 8 0c0-6 8-6 8 0c0 6-8 12-8 12s-8-6-8-12z" fill={d} />
+          : <path d="M124 84l6-14 6 14-6-4z" fill={d} />}
+        {/* Base */}
+        <rect x="114" y="118" width="32" height="6"  rx="2" fill={d} opacity=".8" />
+        <rect x="118" y="126" width="24" height="5"  rx="2" fill={d} opacity=".6" />
+        <rect x="122" y="134" width="16" height="4"  rx="2" fill={d} opacity=".5" />
+      </svg>
+    );
+  }
+
+  // Tier 5: geometric spark — star at centre, dotted orbit, satellites.
+  if (tier === 5) {
+    return (
+      <svg viewBox="0 0 260 180" role="img" aria-label="A wonder">
+        {/* Orbit ring */}
+        <ellipse cx="130" cy="90" rx="80" ry="46" fill="none" stroke={a} strokeWidth="1.2" strokeDasharray="3 5" opacity=".8" />
+        {/* Central spark — 6-point star burst */}
+        {Array.from({ length: 6 }).map((_, i) => {
+          const ang = (i * Math.PI) / 3;
+          return <line key={i} x1={130} y1={90} x2={130 + Math.cos(ang) * 22} y2={90 + Math.sin(ang) * 22}
+                       stroke={d} strokeWidth="2.4" strokeLinecap="round" />;
+        })}
+        <circle cx="130" cy="90" r="6" fill={a} />
+        {/* Satellites on the orbit */}
+        {[[-1.1, 3.5], [0.3, 4], [1.8, 3]].map(([ang, sc], i) => (
+          <circle key={i} cx={130 + Math.cos(ang) * 80} cy={90 + Math.sin(ang) * 46} r={sc} fill={d} />
+        ))}
+      </svg>
+    );
+  }
+
+  // Tier 6–7: editorial constellation — 5 dots, thin connecting lines, one glowing.
+  const pts = [[70, 70], [130, 44], [200, 80], [176, 132], [98, 128]];
   return (
-    <svg viewBox="0 0 260 190" role="img" aria-label="Concept diagram">
-      {[["Claim", 34], ["Evidence", 100], ["Reasoning", 166]].map(([label, y], i) => (
-        <g key={i}>
-          <rect x="34" y={Number(y) - 14} width="192" height="28" rx={r.round}
-            fill={i === 2 ? a : "none"} fillOpacity={i === 2 ? .16 : 0} stroke={i === 2 ? a : d} strokeWidth="1.6" />
-          <text x="48" y={Number(y) + 5} fontSize="12" fontWeight="600" fill={ink}>{label}</text>
-          {i < 2 && <path d={`M130 ${Number(y) + 15}v14`} stroke={d} strokeWidth="1.4" markerEnd="" opacity=".6" />}
-          {i < 2 && <path d={`M126 ${Number(y) + 25}l4 5 4-5`} stroke={d} strokeWidth="1.4" fill="none" opacity=".6" />}
+    <svg viewBox="0 0 260 180" role="img" aria-label="A wonder">
+      {pts.map((_, i) => {
+        const [x1, y1] = pts[i]; const [x2, y2] = pts[(i + 1) % pts.length];
+        return <line key={"l" + i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={a} strokeWidth="0.9" opacity=".7" />;
+      })}
+      {pts.map(([x, y], i) => (
+        <g key={"p" + i}>
+          {i === 1 && <circle cx={x} cy={y} r="10" fill={a} opacity=".22" />}
+          <circle cx={x} cy={y} r={i === 1 ? 4 : 2.6} fill={i === 1 ? a : d} />
         </g>
       ))}
     </svg>

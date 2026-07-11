@@ -1618,6 +1618,7 @@ main.wrap{padding-bottom:110px}
    LIGHT THEME IS UNTOUCHED: these are additive :root[data-mode="dark"] rules.
    ========================================================================== */
 :root[data-mode="dark"] .challenge{background:#4c4954}
+:root[data-mode="dark"] .challenge b{color:#E9C46A}
 :root[data-mode="dark"] .req{background:#4c4654}
 :root[data-mode="dark"] .slider{background:#484551}
 :root[data-mode="dark"] .icon-fmt[aria-pressed="true"]{background:#4c4856}

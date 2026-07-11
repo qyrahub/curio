@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { brand } from "../lib/brand";
 import AskCurio from "../components/AskCurio";
 import { api } from "../lib/api";
-import { PreviewArt, usePreview } from "../components/heroArt";
+import { PreviewArt } from "../components/heroArt";
+import { useWonder } from "../lib/wonderPool";
 import type { Feeds } from "../types";
 
 export default function Home({ nav }: { nav: (r: string) => void }) {
-  const { preview } = usePreview();
+  const { wonder } = useWonder();
   const [feeds, setFeeds] = useState<Feeds | null>(null);
   const load = (shuffle = false) => api.feeds(shuffle).then(setFeeds).catch(() => setFeeds(null));
   useEffect(() => { load(); }, []);
@@ -37,16 +38,19 @@ export default function Home({ nav }: { nav: (r: string) => void }) {
         <div className="card" aria-label="Example of what one page looks like">
           <div className="card-head">
             <span className="dot" style={{ background: "var(--leaf)" }} />
-            <span className="topic">{preview.topic}</span>
+            <span className="topic">{wonder.tag} · Today's spark</span>
             <span className="pageno">Preview</span>
           </div>
           <div className="card-body">
             <div className="anchor"><PreviewArt /></div>
             <div className="guide">
-              <div className="lead">{preview.lead}
-                <small>{preview.small}</small>
+              <div className="lead">{wonder.lead}
+                <small>{wonder.small}</small>
               </div>
-              <div className="challenge"><b>Try this</b>{preview.challenge}</div>
+              <div className="challenge">
+                <b>{wonder.kind === "try" ? "Try this" : "Did you know"}</b>
+                {wonder.body}
+              </div>
             </div>
           </div>
         </div>
