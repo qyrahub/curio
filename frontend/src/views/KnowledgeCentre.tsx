@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import PageHero from "../components/PageHero";
 import "./knowledgeCentre.css";
 
 type Kind = "Article" | "Infographic" | "Working paper" | "One-page" | "Reference";
@@ -55,11 +56,9 @@ export default function KnowledgeCentre() {
 
   return (
     <div className="kc view">
-      <div className="kc-head">
-        <div className="kc-eyebrow">Knowledge Centre</div>
-        <h1>Learn how a child's growth <em>becomes visible</em></h1>
-        <p className="kc-dek">The thinking behind Curio, and practical guidance for parents and families — as articles, infographics and papers you can read, share and download.</p>
-      </div>
+      <PageHero kind="learn" eyebrow="Knowledge Centre"
+        title={<>Learn how a child's growth <em>becomes visible</em></>}
+        tease="The thinking behind Curio, and practical guidance for parents and families — as articles, infographics and papers you can read, share and download." />
 
       {/* hero: the all-in-one diagram */}
       <div className="kc-hero">

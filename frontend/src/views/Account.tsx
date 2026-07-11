@@ -2,7 +2,7 @@ import { useState } from "react";
 import { brand } from "../lib/brand";
 import { api } from "../lib/api";
 import { clearAuth, getUser, saveAuth } from "../lib/auth";
-import { SectionArt } from "../components/art";
+import { SectionArt } from "../components/heroArt";
 import type { UserPublic } from "../types";
 
 function Sparkles() {

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { brand } from "../lib/brand";
 import AskCurio from "../components/AskCurio";
 import { api } from "../lib/api";
-import { ButterflyLifecycle } from "../components/art";
+import { PreviewArt, usePreview } from "../components/heroArt";
 import type { Feeds } from "../types";
 
 export default function Home({ nav }: { nav: (r: string) => void }) {
+  const { preview } = usePreview();
   const [feeds, setFeeds] = useState<Feeds | null>(null);
   const load = (shuffle = false) => api.feeds(shuffle).then(setFeeds).catch(() => setFeeds(null));
   useEffect(() => { load(); }, []);
@@ -36,16 +37,16 @@ export default function Home({ nav }: { nav: (r: string) => void }) {
         <div className="card" aria-label="Example of what one page looks like">
           <div className="card-head">
             <span className="dot" style={{ background: "var(--leaf)" }} />
-            <span className="topic">Biology · The Butterfly</span>
+            <span className="topic">{preview.topic}</span>
             <span className="pageno">Preview</span>
           </div>
           <div className="card-body">
-            <div className="anchor"><ButterflyLifecycle /></div>
+            <div className="anchor"><PreviewArt /></div>
             <div className="guide">
-              <div className="lead">A caterpillar becomes a butterfly!
-                <small>It starts as a tiny egg, grows into a hungry caterpillar, rests in a chrysalis, then opens its wings.</small>
+              <div className="lead">{preview.lead}
+                <small>{preview.small}</small>
               </div>
-              <div className="challenge"><b>Try this</b>Point to each stage in order. What changes inside the chrysalis?</div>
+              <div className="challenge"><b>Try this</b>{preview.challenge}</div>
             </div>
           </div>
         </div>

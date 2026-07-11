@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { SectionArt } from "./art";
+import { SectionArt } from "./heroArt";
 
 export default function PageHero({ kind, eyebrow, title, tease }: {
   kind: string; eyebrow: string; title: ReactNode; tease: string;
