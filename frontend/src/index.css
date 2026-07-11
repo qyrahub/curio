@@ -1604,3 +1604,93 @@ main.wrap{padding-bottom:110px}
 .ip-cards .ip-intent{font-size:.8rem;min-width:0;width:100%}
 @media(max-width:1100px){.ip-cards{gap:6px}.ip-cards .ip-card{font-size:.9rem}}
 @media(max-width:820px){.ip-cards{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.ip-card-ring{transform:scale(.82);transform-origin:center}}
+
+
+/* ==========================================================================
+   DARK THEME — legibility overrides.
+   The dark block only re-mapped tokens, but 25 light colour literals were
+   hardcoded as backgrounds (e.g. .challenge{background:#FFF6E0}). In dark mode
+   the text flipped to near-white while those panels stayed cream — invisible.
+   Below: every rule with a hardcoded light background gets a dark equivalent
+   (keeping a whisper of its hue), and dark text that sits on a now-dark surface
+   is lightened. .cal-dow is deliberately excluded — it sits on an inline
+   rainbow background and must keep its dark ink.
+   LIGHT THEME IS UNTOUCHED: these are additive :root[data-mode="dark"] rules.
+   ========================================================================== */
+:root[data-mode="dark"] .challenge{background:#4c4954}
+:root[data-mode="dark"] .req{background:#4c4654}
+:root[data-mode="dark"] .slider{background:#484551}
+:root[data-mode="dark"] .icon-fmt[aria-pressed="true"]{background:#4c4856}
+:root[data-mode="dark"] .mini .mg .ch{background:#4c4954;color:#d8c8af}
+:root[data-mode="dark"] .tip{background:#4c4954}
+:root[data-mode="dark"] .tip.good{background:#494956}
+:root[data-mode="dark"] .flip-challenge{background:#4c4954}
+:root[data-mode="dark"] .flip-dot{background:#484551}
+:root[data-mode="dark"] .cv-story{background:#4c4954}
+:root[data-mode="dark"] .paint-sep{background:#484551}
+:root[data-mode="dark"] .cp-track{background:#4a4753}
+:root[data-mode="dark"] .coach-action.checked{background:#494956}
+:root[data-mode="dark"] .coach-reflect{background:#4c4954}
+:root[data-mode="dark"] .coach-pro{background:#494959}
+:root[data-mode="dark"] .match-card.done{background:#494956}
+:root[data-mode="dark"] .tetris-canvas{background:#4c4a57}
+:root[data-mode="dark"] .ask-mic.on{background:#4c4654}
+:root[data-mode="dark"] /* triple match */
+.tm-board{background:#4c4955}
+:root[data-mode="dark"] .tm-slot.filled{background:#4c4856}
+:root[data-mode="dark"] .sf-item.done{background:#494956}
+:root[data-mode="dark"] .ga-bar{background:#4a4752}
+:root[data-mode="dark"] .ga-celebrate{background:#494956}
+:root[data-mode="dark"] .bp-bar{background:#4a4752}
+:root[data-mode="dark"] .ws-slot.win{background:#494956}
+:root[data-mode="dark"] .ws-tile{background:#4c4955}
+:root[data-mode="dark"] .tv-opt:hover:not(:disabled){background:#4a4959}
+:root[data-mode="dark"] .tv-opt.correct{background:#494956}
+:root[data-mode="dark"] .tv-opt.wrong{background:#4c4756}
+:root[data-mode="dark"] .pz-board{background:#4a4752}
+:root[data-mode="dark"] .pz-mini-cell{background:#4c4955}
+:root[data-mode="dark"] .comic-art{background:#4c4a57}
+:root[data-mode="dark"] .comic-pick button{background:#4a4753}
+:root[data-mode="dark"] .lvl-bar{background:#4a4752}
+:root[data-mode="dark"] .dv-bar{background:#4a4752}
+:root[data-mode="dark"] .ins-btrack{background:#4a4752}
+:root[data-mode="dark"] .ps-ava{background:#444353}
+:root[data-mode="dark"] .adm-btn.danger:hover{background:#4c4856}
+:root[data-mode="dark"] .adm-work-bar{background:#4a4752}
+:root[data-mode="dark"] .adm-toggle{background:#46434f}
+:root[data-mode="dark"] .set-flag.locked{background:#4c4653;color:#e4b9b8}
+:root[data-mode="dark"] .set-flag.vac{background:#484858;color:#b7c9e1}
+:root[data-mode="dark"] .pt-good{background:#494956;color:#b2c8c4}
+:root[data-mode="dark"] .pt-bad{background:#4c4755;color:#dbb9ba}
+:root[data-mode="dark"] .pt-pro{background:#4c4955;color:#cec3b4}
+:root[data-mode="dark"] .gantt-x:hover{background:#4c4756}
+:root[data-mode="dark"] .need-x:hover{background:#4c4756}
+:root[data-mode="dark"] .fb-badge.fb-shipped{background:#494956;color:#b2c8c4}
+:root[data-mode="dark"] .adm-btn.done{background:#494956;color:#b2c8c4}
+:root[data-mode="dark"] .gf-pro{background:#4c4955;color:#cec3b4}
+:root[data-mode="dark"] /* chip added state + preview labels */
+.gf-areachip.added{background:#494956;color:#b2c8c4}
+:root[data-mode="dark"] .bc-ftag.good{background:#494956;color:#b2c8c4}
+:root[data-mode="dark"] .bc-ftag.bad{background:#4c4755;color:#dbb9ba}
+:root[data-mode="dark"] .bc-ftag.improving{background:#4c4854;color:#d3c3b4}
+:root[data-mode="dark"] .bc-ftag.watch{background:#494859;color:#c0becf}
+:root[data-mode="dark"] .cal-num{color:#b3adaf}
+:root[data-mode="dark"] .needs-err{color:#ddb4b5}
+:root[data-mode="dark"] .fb-ok{color:#a9c3bc}
+:root[data-mode="dark"] .gf-err{color:#ddb4b5}
+:root[data-mode="dark"] .gf-added{color:#a9c3bc}
+:root[data-mode="dark"] .ins-preview{color:#c9bdab}
+:root[data-mode="dark"] .intel-h.bad{color:#d8b2b2}
+:root[data-mode="dark"] .intel-h.good{color:#a9c3bc}
+
+/* dark: light-gradient panels (Ask Curio, anchor, helper, nudges…) */
+:root[data-mode="dark"] .anchor{background:linear-gradient(180deg,#332f3f,#2b2836)}
+:root[data-mode="dark"] .mini .emoji{background:linear-gradient(180deg,#332f3f,#2b2836)}
+:root[data-mode="dark"] .helper{background:linear-gradient(180deg,#2c3340,#28303c)}
+:root[data-mode="dark"] .brainwrap{background:linear-gradient(180deg,#2c3340,#28303c)}
+:root[data-mode="dark"] .flip-cover{background:linear-gradient(150deg,#352f3d,#3a2f34)}
+:root[data-mode="dark"] .nudge-banner{background:linear-gradient(135deg,#352f3d,#3a2f34)}
+:root[data-mode="dark"] .coach-goal{background:linear-gradient(135deg,#352f3d,#3a2f34)}
+:root[data-mode="dark"] .askcurio{background:linear-gradient(135deg,#3a3327,#3a2e2a)}
+:root[data-mode="dark"] .bp-field{background:linear-gradient(#28303c,#312c3f)}
+:root[data-mode="dark"] .ins-loop-wrap{background:linear-gradient(180deg,#2f2c3d,#2a2839)}
