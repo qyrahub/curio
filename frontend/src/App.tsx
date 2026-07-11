@@ -45,7 +45,6 @@ const G_CHILD: NavItem[] = [
 ];
 const G_FAMILY: NavItem[] = [
   { rt: "family", label: "Family", icon: "👪", sub: "Everyone together" },
-  { rt: "parent", label: "Parent", icon: "🫶", sub: "Your corner" },
   { rt: "planner", label: "Planner", icon: "🗓", sub: "The plan" },
 ];
 const G_LEARN: NavItem[] = [
@@ -55,8 +54,8 @@ const G_LEARN: NavItem[] = [
 const CHILD_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
   { label: "My space", items: [G_CHILD[0], G_CHILD[1], G_CHILD[3], G_CHILD[2]] },
-  { label: "Grow", items: [G_GROW[1]] },
-  { label: "Family", items: [G_FAMILY[2]] },
+  { rt: "journal", label: "Journal" },
+  { rt: "planner", label: "Planner" },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
 ];
@@ -64,13 +63,14 @@ const PARENT_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
   { label: "Grow", items: G_GROW },
   { label: "Child", items: G_CHILD },
+  { rt: "parent", label: "Parent" },
   { label: "Family", items: G_FAMILY },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
 ];
 const ADMIN_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
-  { label: "Grow", items: [{ rt: "intelligence", label: "Intelligence", icon: "⚡", sub: "The signal room" }, G_GROW[2], G_GROW[3]] },
+  { label: "Grow", items: [{ rt: "intelligence", label: "Intelligence", icon: "\u26a1", sub: "The signal room" }, G_GROW[2], G_GROW[3]] },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
 ];
