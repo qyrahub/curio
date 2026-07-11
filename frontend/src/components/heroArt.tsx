@@ -291,8 +291,11 @@ export function PreviewArt() {
   }
 
   // older: a clean concept diagram — claim / evidence / reasoning
+  // (viewBox must be tall enough for all three rows: the third row is centred at
+  // y=166 with half-height 14, so its bottom edge sits at 180 — a 150-tall viewBox
+  // was clipping "Reasoning" off entirely, leaving Claim/Evidence looking unfinished)
   return (
-    <svg viewBox="0 0 260 150" role="img" aria-label="Concept diagram">
+    <svg viewBox="0 0 260 190" role="img" aria-label="Concept diagram">
       {[["Claim", 34], ["Evidence", 100], ["Reasoning", 166]].map(([label, y], i) => (
         <g key={i}>
           <rect x="34" y={Number(y) - 14} width="192" height="28" rx={r.round}

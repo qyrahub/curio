@@ -18,7 +18,13 @@ const PLANS: Plan[] = ["Free", "Family", "Premium"];
 const ROLE_COLOR: Record<Role, string> = { admin: "#6366F1", parent: "#5AA7E6", child: "#FF7A66" };
 const uid = () => Math.random().toString(36).slice(2);
 
-interface Account { id: string; name: string; email: string; role: Role; plan: Plan; parentId: string | null; themeRight: boolean; }
+interface Account { id: string; name: string; email: string; role: Role; plan: Plan; parentId: string | null; themeRight: boolean; username?: string; country?: string; }
+type Gender = ChildProfile["gender"];
+const GENDERS: { v: Gender; l: string }[] = [{ v: "girl", l: "Girl" }, { v: "boy", l: "Boy" }, { v: "other", l: "Other" }];
+const emptyNewUser = () => ({
+  name: "", email: "", role: "child" as Role, username: "", password: "",
+  age: "7", gender: "other" as Gender, theme: "" as ThemeKey | "", country: "", interests: "",
+});
 interface AcctSec { locked: boolean; vacation: { start: string; end: string } | null; }
 interface Guardian { id: string; name: string; email: string; role: "parent" | "guardian"; modules: string[]; canEditAccount: boolean; }
 interface SetState {
@@ -59,7 +65,7 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
     role: "child", plan: ovr[c.id]?.plan || "Family", parentId: meId, themeRight: ovr[c.id]?.themeRight ?? true,
   }));
   const accounts: Account[] = [me, ...childAccts, ...extra];
-  const [nu, setNu] = useState({ name: "", email: "", role: "child" as Role });
+  const [nu, setNu] = useState(emptyNewUser());
   const childIdOf = (id: string) => (id.startsWith("acc-") ? id.slice(4) : "");
   const setPlan = (id: string, plan: Plan) => {
     const cid = childIdOf(id);
@@ -82,9 +88,28 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
   };
   const addAcct = () => {
     if (!nu.name.trim() || !nu.email.trim()) { flash("Name and email are required."); return; }
-    if (nu.role === "child") { const nc = addChild(); updateChild({ ...nc, name: nu.name.trim() }); }
-    else setExtra((a) => [...a, { id: "acc-" + uid(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role, plan: "Family", parentId: null, themeRight: true }]);
-    setNu({ name: "", email: "", role: "child" }); flash("Account created.");
+    if (nu.role === "child") {
+      const nc = addChild();
+      const age = Math.max(1, Math.min(18, Math.round(Number(nu.age)) || nc.age));
+      const interests = nu.interests.split(",").map((s) => s.trim()).filter(Boolean);
+      updateChild({
+        ...nc, name: nu.name.trim(), age, gender: nu.gender,
+        theme: (nu.theme || nc.theme) as ThemeKey,
+        country: nu.country.trim() || undefined,
+        interests: interests.length ? interests : nc.interests,
+      });
+    } else {
+      setExtra((a) => [...a, {
+        id: "acc-" + uid(), name: nu.name.trim(), email: nu.email.trim(), role: nu.role,
+        plan: "Family", parentId: null, themeRight: true,
+        username: nu.username.trim() || undefined, country: nu.country.trim() || undefined,
+      }]);
+    }
+    // Passwords for invited parents/guardians aren't stored client-side — an invite/reset
+    // link is what actually sets credentials, same as the "Reset" action on the table below.
+    const hadPassword = nu.role !== "child" && !!nu.password;
+    setNu(emptyNewUser());
+    flash(hadPassword ? "Account created — invite link sent to set the password." : "Account created.");
   };
 
   const TABS = role === "child"
@@ -174,9 +199,37 @@ export default function Settings({ user, onSignOut }: { user?: UserPublic | null
               <input placeholder="Name" value={nu.name} onChange={(e) => setNu({ ...nu, name: e.target.value })} />
               <input placeholder="Email" value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} />
               <select value={nu.role} onChange={(e) => setNu({ ...nu, role: e.target.value as Role })}><option value="child">child</option><option value="parent">parent</option>{isAdmin && <option value="admin">admin</option>}</select>
-              <button className="adm-btn" onClick={addAcct}>＋ Add</button>
             </div>
-            <p className="muted" style={{ fontSize: ".82rem", marginTop: 8 }}>Children can't sign themselves up — they're enrolled here by a parent or admin.</p>
+
+            {nu.role === "child" ? (
+              <div className="adm-addrow">
+                <input type="number" min={1} max={18} placeholder="Age" value={nu.age} onChange={(e) => setNu({ ...nu, age: e.target.value })} style={{ maxWidth: 90 }} />
+                <select value={nu.gender} onChange={(e) => setNu({ ...nu, gender: e.target.value as Gender })}>
+                  {GENDERS.map((g) => <option key={g.v} value={g.v}>{g.l}</option>)}
+                </select>
+                <select value={nu.theme} onChange={(e) => setNu({ ...nu, theme: e.target.value as ThemeKey })}>
+                  <option value="">Theme (auto)</option>
+                  {(Object.keys(THEMES) as ThemeKey[]).map((k) => <option key={k} value={k}>{THEMES[k].emoji} {THEMES[k].name}</option>)}
+                </select>
+                <input placeholder="Country" value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ maxWidth: 140 }} />
+                <input placeholder="Interests (comma-separated)" value={nu.interests} onChange={(e) => setNu({ ...nu, interests: e.target.value })} />
+              </div>
+            ) : (
+              <div className="adm-addrow">
+                <input placeholder="Username" value={nu.username} onChange={(e) => setNu({ ...nu, username: e.target.value })} />
+                <input type="password" placeholder="Set password (or leave blank to invite)" value={nu.password} onChange={(e) => setNu({ ...nu, password: e.target.value })} />
+                <input placeholder="Country" value={nu.country} onChange={(e) => setNu({ ...nu, country: e.target.value })} style={{ maxWidth: 140 }} />
+              </div>
+            )}
+
+            <div className="adm-addrow" style={{ marginTop: 4 }}>
+              <button className="adm-btn" onClick={addAcct}>＋ Add {nu.role}</button>
+            </div>
+            <p className="muted" style={{ fontSize: ".82rem", marginTop: 8 }}>
+              {nu.role === "child"
+                ? "Children can't sign themselves up — they're enrolled here by a parent or admin. Age, gender, theme, country and interests can all be set now, or changed later per-child."
+                : "A password set here triggers a secure invite link rather than being stored as plain text — same as the Reset action below."}
+            </p>
           </div>
           <div className="adm-card" style={{ marginTop: 14 }}>
             <h3 style={{ marginTop: 0 }}>Account hierarchy</h3>
