@@ -72,7 +72,8 @@ export default function Journal() {
     const label = speakerName();
     setText((x) => (x ? x.trimEnd() + "\n" : "") + `${label}: ${t.trim()}`);
   };
-  const dict = useDictation({ onResult: appendDictation });
+  const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
+  const dict = useDictation({ onResult: appendDictation, onError: (msg) => flash(msg) });
 
   const [patterns, setPatterns] = useState<JournalPatterns | null>(null);
   const [pbusy, setPbusy] = useState(false);
@@ -94,7 +95,6 @@ export default function Journal() {
   };
   useEffect(load, [scope, childId]);
 
-  const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
   const days = PERIODS.find((p) => p[0] === period)![2];
   const from = sinceKey(days);
   const periodLabel = PERIODS.find((p) => p[0] === period)![1].toLowerCase();
