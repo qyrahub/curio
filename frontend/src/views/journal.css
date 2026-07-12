@@ -65,3 +65,72 @@
 .jn-push{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink-soft); border-radius:99px; width:30px; height:30px; display:grid; place-items:center; cursor:pointer; font-size:.85rem; }
 .jn-push:hover{ border-color:var(--jn-accent); color:var(--jn-accent); }
 .jn-planned{ display:block; margin-top:5px; font-size:.76rem; font-weight:700; color:var(--jn-accent); }
+
+/* --- Journal three modes (personal / conversation / dialogue) --- */
+
+/* Mode selector — sits above the scope row. */
+.jn-modes{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.jn-mode{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink); font:inherit; font-weight:700; font-size:.92rem; padding:9px 16px; border-radius:99px; cursor:pointer; }
+.jn-mode.on{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.jn-mode:hover:not(.on){ border-color:var(--jn-accent); }
+
+/* Textarea + mic wrap (personal) */
+.jn-textwrap{ position:relative; }
+.jn-mic{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink-soft); border-radius:99px; width:38px; height:38px; display:grid; place-items:center; cursor:pointer; font-size:1.05rem; }
+.jn-mic:hover{ border-color:var(--jn-accent); color:var(--jn-accent); }
+.jn-mic.on{ background:#E4634C; border-color:#E4634C; color:#fff; animation:jnPulse 1.4s ease-in-out infinite; }
+.jn-textwrap > .jn-mic{ position:absolute; right:10px; bottom:10px; }
+.jn-mics{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.jn-mic.wide{ width:auto; height:auto; padding:9px 15px; font-size:.9rem; font-weight:700; border-radius:99px; }
+@keyframes jnPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(228,99,76,.55); } 50%{ box-shadow:0 0 0 8px rgba(228,99,76,0); } }
+
+/* Two-participant row (conversation & dialogue) */
+.jn-partrow{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.jn-part{ display:flex; flex-direction:column; gap:4px; font-size:.82rem; font-weight:700; color:var(--ink-soft); }
+.jn-part input, .jn-part select{ border:1.5px solid var(--ring); background:var(--paper); color:var(--ink); border-radius:10px; padding:8px 11px; font:inherit; font-size:.95rem; font-weight:500; }
+.jn-part input:focus, .jn-part select:focus{ outline:none; border-color:var(--jn-accent); }
+@media (max-width:640px){ .jn-partrow{ grid-template-columns:1fr; } }
+
+/* Inline analysis card (appears right after saving a conv/dialogue) */
+.jn-analysis{ background:linear-gradient(180deg,color-mix(in srgb,var(--jn-accent) 6%,var(--surface)),var(--paper)); border:1px solid var(--jn-accent); border-radius:16px; padding:16px 18px; margin-bottom:16px; }
+.jn-analysis .jn-psum{ margin:10px 0 8px; }
+.jn-tone{ display:inline-flex; gap:6px; align-items:center; margin:6px 0 4px; font-size:.86rem; color:var(--ink); }
+
+/* Recommendations list — both inline panel and per-entry details */
+.jn-recs{ display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+.jn-recs.compact{ margin-top:6px; }
+.jn-recs-h{ font-size:.78rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:6px 0 2px; }
+.jn-rec{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--surface); border:1px solid var(--ring); border-radius:11px; padding:8px 12px; }
+.jn-rkind{ font-size:.68rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:99px; flex:none; }
+.jn-rkind.k-planner{ background:#E5F1FF; color:#1E5A96; }
+.jn-rkind.k-coach{ background:#FFEDD5; color:#9A4D00; }
+.jn-rkind.k-develop{ background:#DCF7E3; color:#1F6B36; }
+.jn-rkind.k-brain{ background:#F0E6FF; color:#4E30A0; }
+.jn-rkind.k-reflect{ background:#F4F1EA; color:#5B5666; }
+.jn-rt{ flex:1; font-size:.92rem; line-height:1.4; min-width:200px; }
+.jn-rgo{ border:1.5px solid var(--ink); background:var(--ink); color:var(--paper); border-radius:99px; padding:5px 12px; font:inherit; font-weight:700; font-size:.78rem; cursor:pointer; flex:none; }
+.jn-rgo:hover{ opacity:.9; }
+
+/* Timeline entry — mode chip + expandable summary */
+.jn-emode{ display:inline-block; margin-right:8px; padding:2px 9px; border-radius:99px; font-size:.72rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; }
+.jn-emode.m-conversation{ background:#E5F1FF; color:#1E5A96; }
+.jn-emode.m-dialogue{ background:#F0E6FF; color:#4E30A0; }
+.jn-entry.m-conversation{ border-left:3px solid #1E5A96; }
+.jn-entry.m-dialogue{ border-left:3px solid #4E30A0; }
+.jn-ebody{ display:block; margin-top:4px; line-height:1.5; }
+.jn-ebody.script{ white-space:pre-wrap; font-family:"Nunito","Fredoka",inherit; }
+.jn-eai{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--ring); }
+.jn-eai summary{ cursor:pointer; font-size:.86rem; color:var(--ink); }
+.jn-eaisum{ margin:6px 0 8px; font-size:.94rem; }
+.jn-etags{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 6px; }
+.jn-etag{ background:var(--surface); border:1px solid var(--ring); border-radius:99px; padding:2px 9px; font-size:.78rem; color:var(--ink-soft); font-weight:600; }
+
+/* Dark-mode overrides — additive only; light stays byte-identical. */
+:root[data-mode="dark"] .jn-mode.on{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
+:root[data-mode="dark"] .jn-rkind.k-planner{ background:#1e3a5f; color:#bcd8ff; }
+:root[data-mode="dark"] .jn-rkind.k-coach{ background:#5a3a1a; color:#ffd7a3; }
+:root[data-mode="dark"] .jn-rkind.k-develop{ background:#1f4d2c; color:#c2f0d0; }
+:root[data-mode="dark"] .jn-rkind.k-brain{ background:#3a2a70; color:#dcc8ff; }
+:root[data-mode="dark"] .jn-rkind.k-reflect{ background:#3a3841; color:#c8c4d0; }
+:root[data-mode="dark"] .jn-emode.m-conversation{ background:#1e3a5f; color:#bcd8ff; }
+:root[data-mode="dark"] .jn-emode.m-dialogue{ background:#3a2a70; color:#dcc8ff; }
