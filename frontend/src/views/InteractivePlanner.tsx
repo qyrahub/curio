@@ -161,6 +161,13 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
 
   const patch = (fn: (d: Data) => Data) => setAll((p) => ({ ...p, [calId]: fn(p[calId] || seed()) }));
   const patchDay = (di: number, fn: (d: Day) => Day) => patch((d) => ({ ...d, days: d.days.map((x, i) => (i === di ? fn(x) : x)) }));
+  // Focused day for the on-screen view. Defaults to today's day-of-week
+  // (Mon=0..Sun=6), so opening the planner on Wednesday lands on Wednesday.
+  const jsDay = new Date().getDay(); // 0=Sun..6=Sat
+  const [focused, setFocused] = useState<number>(jsDay === 0 ? 6 : jsDay - 1);
+  // Only mount the 7-day print grid when the user hits Download — avoids
+  // ~50 hidden textareas on every render of the on-screen view.
+  const [printing, setPrinting] = useState(false);
 
   const dayStat = (d: Day) => { const tot = d.tasks.length; const done = d.tasks.filter((x) => x.done).length; return { tot, done, pct: tot ? Math.round((done / tot) * 100) : 0 }; };
   const overall = useMemo(() => { let tot = 0, done = 0; data.days.forEach((d) => { tot += d.tasks.length; done += d.tasks.filter((x) => x.done).length; }); return { tot, done, pct: tot ? Math.round((done / tot) * 100) : 0 }; }, [data]);
@@ -205,10 +212,19 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
   };
 
   const downloadPDF = () => {
-    document.body.classList.add("ip-printing");
-    const done = () => { document.body.classList.remove("ip-printing"); window.removeEventListener("afterprint", done); };
-    window.addEventListener("afterprint", done);
-    window.print();
+    // Mount the 7-day print grid before firing window.print so it's in the
+    // DOM when the print stylesheet swaps visibility.
+    setPrinting(true);
+    requestAnimationFrame(() => {
+      document.body.classList.add("ip-printing");
+      const done = () => {
+        document.body.classList.remove("ip-printing");
+        setPrinting(false);
+        window.removeEventListener("afterprint", done);
+      };
+      window.addEventListener("afterprint", done);
+      window.print();
+    });
   };
 
   if (!scope) return <div className={embedded ? "" : "view"}><p className="muted">Add a child profile to start planning.</p></div>;
@@ -302,32 +318,53 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
         </div>
       </div>
 
-      {/* day cards */}
-      <div className="ip-cards">
+      {/* On-screen: week strip + focused-day panel */}
+      <div className="ip-week-strip">
         {data.days.map((d, i) => {
-          const col = DAYCOL[i]; const st = dayStat(d);
+          const col = DAYCOL[i]; const st = dayStat(d); const on = focused === i;
           return (
-            <div className="ip-card" key={i} style={{ borderColor: col.acc }}>
-              {/* Row 1 — header + intent + progress ring, one visual block */}
-              <div className="ip-sect ip-sect-top">
-                <div className="ip-card-h" style={{ background: col.light }}>{DAYNAMES[i]}<span className="ip-card-date">{dayDate(i)}</span></div>
-                <AutoTextarea className="ip-intent" value={d.intent} style={{ color: col.acc }} onChange={(v) => patchDay(i, (x) => ({ ...x, intent: v }))} />
-                <div className="ip-card-ring"><Donut pct={st.pct} color={col.acc} size={104} /><span className="ip-dp">Daily Progress</span></div>
-              </div>
+            <button key={i} type="button"
+              className={"ip-week-day" + (on ? " on" : "")}
+              style={on ? { borderColor: col.acc, background: col.light } : { borderColor: col.acc }}
+              onClick={() => setFocused(i)}>
+              <div className="ip-week-name" style={{ color: col.acc }}>{DOW[i]}</div>
+              <div className="ip-week-date">{dayDate(i)}</div>
+              <Donut pct={st.pct} color={col.acc} size={38} />
+              <div className="ip-week-intent" title={d.intent}>{d.intent || <em style={{ opacity: .5 }}>no intent</em>}</div>
+              <div className="ip-week-count"><b style={{ color: col.acc }}>{st.done}</b>/{st.tot} tasks</div>
+            </button>
+          );
+        })}
+      </div>
 
-              {/* Row 2 — Top 3 Priorities */}
-              <div className="ip-sect ip-sect-prio">
-                <div className="ip-sec" style={{ background: col.light }}>Top 3 Priorities</div>
+      {/* Focused-day panel — full width, wide columns, no cropping. */}
+      {(() => {
+        const i = focused; const d = data.days[i]; const col = DAYCOL[i]; const st = dayStat(d);
+        return (
+          <div className="ip-day-panel" style={{ borderColor: col.acc }}>
+            <div className="ip-day-head" style={{ background: col.light }}>
+              <div className="ip-day-title">
+                <h2 style={{ color: col.acc }}>{DAYNAMES[i]}<span className="ip-day-date">, {dayDate(i)}</span></h2>
+                <AutoTextarea className="ip-day-intent" value={d.intent} style={{ color: col.acc }} onChange={(v) => patchDay(i, (x) => ({ ...x, intent: v }))} />
+              </div>
+              <div className="ip-day-ring">
+                <Donut pct={st.pct} color={col.acc} size={92} />
+                <span className="ip-dp">Daily Progress</span>
+              </div>
+            </div>
+
+            <div className="ip-day-grid">
+              <div className="ip-day-col">
+                <div className="ip-day-secH" style={{ color: col.acc }}>Top 3 Priorities</div>
                 {d.priorities.map((p, pi) => (
                   <div className="ip-prio" key={pi}><b style={{ color: col.acc }}>{pi + 1}</b>
                     <AutoTextarea value={p} onChange={(v) => patchDay(i, (x) => ({ ...x, priorities: x.priorities.map((val, j) => (j === pi ? v : val)) }))} /></div>
                 ))}
               </div>
 
-              {/* Row 3 — Tasks + Add + Completed/Outstanding pills */}
-              <div className="ip-sect ip-sect-tasks">
-                <div className="ip-sec" style={{ background: col.light }}>Tasks</div>
-                <div className="ip-sect-items">
+              <div className="ip-day-col ip-day-col-tasks">
+                <div className="ip-day-secH" style={{ color: col.acc }}>Tasks</div>
+                <div className="ip-day-items">
                   {d.tasks.map((tk) => (
                     <div className={"ip-task" + (tk.done ? " done" : "")} key={tk.id}>
                       <button className={"ip-check" + (tk.done ? " on" : "")} style={tk.done ? { background: col.acc, borderColor: col.acc } : undefined}
@@ -344,10 +381,9 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                 </div>
               </div>
 
-              {/* Row 4 — Daily Schedule + Add slot */}
-              <div className="ip-sect ip-sect-schedule">
-                <div className="ip-sec" style={{ background: col.light }}>Daily Schedule</div>
-                <div className="ip-sect-items">
+              <div className="ip-day-col">
+                <div className="ip-day-secH" style={{ color: col.acc }}>Daily Schedule</div>
+                <div className="ip-day-items">
                   {d.schedule.map((s) => (
                     <div className={"ip-slot" + (s.done ? " done" : "")} key={s.id}>
                       <input className="ip-time" value={s.time} onChange={(e) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, time: e.target.value } : v)) }))} />
@@ -359,11 +395,12 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                   <button className="ip-add" style={{ color: col.acc }} onClick={() => patchDay(i, (x) => ({ ...x, schedule: [...x.schedule, { id: uid(), time: "", text: "", done: false }] }))}>＋ Add slot</button>
                 </div>
               </div>
+            </div>
 
-              {/* Rows 5-7 — Notes / What went well / What am I grateful for */}
+            <div className="ip-day-grid ip-day-grid-b">
               {([["Notes", "notes"], ["What went well today?", "well"], ["What am I grateful for?", "grateful"]] as const).map(([label, key]) => (
-                <div className={`ip-sect ip-sect-${key}`} key={key}>
-                  <div className="ip-sec" style={{ background: col.light }}>{label}</div>
+                <div className="ip-day-col" key={key}>
+                  <div className="ip-day-secH" style={{ color: col.acc }}>{label}</div>
                   {(d[key] as string[]).map((line, li) => (
                     <div className="ip-line" key={li}><b>{li + 1}</b>
                       <AutoTextarea value={line} onChange={(v) => patchDay(i, (x) => ({ ...x, [key]: (x[key] as string[]).map((val, j) => (j === li ? v : val)) }))} /></div>
@@ -371,9 +408,72 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
                 </div>
               ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })()}
+
+      {/* Print-only: full 7-day grid — mounted only during Download PDF so the
+          on-screen view doesn't carry ~50 hidden textareas. Existing print CSS
+          reformats this as a 2-column A4 layout. */}
+      {printing && (
+        <div className="ip-cards ip-print-only" aria-hidden="true">
+          {data.days.map((d, i) => {
+            const col = DAYCOL[i]; const st = dayStat(d);
+            return (
+              <div className="ip-card" key={i} style={{ borderColor: col.acc }}>
+                <div className="ip-sect ip-sect-top">
+                  <div className="ip-card-h" style={{ background: col.light }}>{DAYNAMES[i]}<span className="ip-card-date">{dayDate(i)}</span></div>
+                  <div className="ip-intent" style={{ color: col.acc, whiteSpace: "pre-wrap", textAlign: "center", fontStyle: "italic", fontWeight: 700, padding: "7px 6px" }}>{d.intent}</div>
+                  <div className="ip-card-ring"><Donut pct={st.pct} color={col.acc} size={104} /><span className="ip-dp">Daily Progress</span></div>
+                </div>
+                <div className="ip-sect ip-sect-prio">
+                  <div className="ip-sec" style={{ background: col.light }}>Top 3 Priorities</div>
+                  {d.priorities.map((p, pi) => (
+                    <div className="ip-prio" key={pi}><b style={{ color: col.acc }}>{pi + 1}</b>
+                      <div style={{ padding: "3px 2px", fontSize: ".82rem", flex: 1 }}>{p}</div></div>
+                  ))}
+                </div>
+                <div className="ip-sect ip-sect-tasks">
+                  <div className="ip-sec" style={{ background: col.light }}>Tasks</div>
+                  <div className="ip-sect-items">
+                    {d.tasks.map((tk) => (
+                      <div className={"ip-task" + (tk.done ? " done" : "")} key={tk.id}>
+                        <span className={"ip-check" + (tk.done ? " on" : "")} style={tk.done ? { background: col.acc, borderColor: col.acc } : undefined}>{tk.done ? "✓" : ""}</span>
+                        <div style={{ padding: "3px 2px", fontSize: ".82rem", flex: 1 }}>{tk.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="ip-counts">
+                    <span style={{ background: col.light }}>Completed <b style={{ color: col.acc }}>{st.done}</b></span>
+                    <span style={{ background: col.light }}>Outstanding <b>{st.tot - st.done}</b></span>
+                  </div>
+                </div>
+                <div className="ip-sect ip-sect-schedule">
+                  <div className="ip-sec" style={{ background: col.light }}>Daily Schedule</div>
+                  <div className="ip-sect-items">
+                    {d.schedule.map((s) => (
+                      <div className={"ip-slot" + (s.done ? " done" : "")} key={s.id}>
+                        <div style={{ fontSize: ".78rem", fontWeight: 700, minWidth: 54 }}>{s.time}</div>
+                        <div style={{ padding: "3px 2px", fontSize: ".82rem", flex: 1 }}>{s.text}</div>
+                        <span className={"ip-check" + (s.done ? " on" : "")} style={s.done ? { background: col.acc, borderColor: col.acc } : undefined}>{s.done ? "✓" : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {([["Notes", "notes"], ["What went well today?", "well"], ["What am I grateful for?", "grateful"]] as const).map(([label, key]) => (
+                  <div className={`ip-sect ip-sect-${key}`} key={key}>
+                    <div className="ip-sec" style={{ background: col.light }}>{label}</div>
+                    {(d[key] as string[]).map((line, li) => (
+                      <div className="ip-line" key={li}><b>{li + 1}</b>
+                        <div style={{ padding: "3px 2px", fontSize: ".82rem", flex: 1 }}>{line}</div></div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

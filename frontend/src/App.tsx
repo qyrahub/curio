@@ -22,6 +22,9 @@ import Workbench from "./views/Workbench";
 import Brain from "./views/Brain";
 import KnowledgeCentre from "./views/KnowledgeCentre";
 import Curate from "./views/Curate";
+import Inbox from "./views/Inbox";
+import "./views/inbox.css";
+import { inbox } from "./lib/inboxStore";
 import Journal from "./views/Journal";
 import CheckIn from "./views/CheckIn";
 import Help from "./views/Help";
@@ -62,6 +65,7 @@ const CHILD_NAV: NavEntry[] = [
   { rt: "planner", label: "Planner" },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
+  { rt: "inbox", label: "\u{1F4EC}" },
 ];
 const PARENT_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
@@ -71,25 +75,53 @@ const PARENT_NAV: NavEntry[] = [
   { label: "Grow", items: G_GROW },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
+  { rt: "inbox", label: "\u{1F4EC}" },
 ];
 const ADMIN_NAV: NavEntry[] = [
   { rt: "home", label: "Home" },
   { label: "Grow", items: [{ rt: "intelligence", label: "Intelligence", icon: "\u26a1", sub: "The signal room" }, G_GROW[2], G_GROW[3]] },
   { label: "Learn", items: G_LEARN },
   { rt: "help", label: "Help" },
+  { rt: "inbox", label: "\u{1F4EC}" },
 ];
 
 // Routes reachable per mode (dropdown items + the always-there ones).
 const routesOf = (entries: NavEntry[]) =>
   entries.flatMap((e) => ("items" in e ? e.items.map((i) => i.rt) : [e.rt]));
 
-const ALL_ROUTES = ["home", "child", "parent", "checkin", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "help", "account", "settings"];
+const ALL_ROUTES = ["home", "child", "parent", "checkin", "family", "planner", "journal", "coach", "develop", "insights", "brain", "library", "workbench", "canvas", "intelligence", "feedback", "learn", "curate", "help", "inbox", "account", "settings"];
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 function firstName(user: UserPublic) {
   const base = user.email.split("@")[0];
   const first = base.split(/[._\s]+/)[0] || base;
   return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+function InboxNavButton({ route, go }: { route: string; go: (r: string) => void }) {
+  const [count, setCount] = useState<number>(inbox.unreadCount());
+  useEffect(() => {
+    const refresh = () => setCount(inbox.unreadCount());
+    // Refresh when the Inbox view marks something read, or when the tab
+    // regains focus (in case another tab changed localStorage).
+    window.addEventListener("curio-inbox-changed", refresh);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("curio-inbox-changed", refresh);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const active = route === "inbox";
+  return (
+    <button className={"nav-inbox" + (active ? " active" : "")} onClick={() => go("inbox")}
+      title={count > 0 ? `${count} unread inbox item${count === 1 ? "" : "s"}` : "Inbox"}
+      aria-label={count > 0 ? `Inbox — ${count} unread` : "Inbox"}>
+      📬
+      {count > 0 && <span className="nav-badge">{count > 99 ? "99+" : count}</span>}
+    </button>
+  );
 }
 
 function NavGroup({ label, items, route, go }: { label: string; items: NavItem[]; route: string; go: (r: string) => void }) {
@@ -269,7 +301,9 @@ function Shell() {
                 ? (e.label === "__parent__"
                   ? <ParentGroup key="parent" route={r} go={gnav} />
                   : <NavGroup key={e.label} label={e.label} items={e.items} route={r} go={gnav} />)
-                : <button key={e.rt} className={r === e.rt ? "on" : ""} onClick={() => gnav(e.rt)}>{e.label}</button>
+                : e.rt === "inbox"
+                  ? <InboxNavButton key="inbox" route={r} go={gnav} />
+                  : <button key={e.rt} className={r === e.rt ? "on" : ""} onClick={() => gnav(e.rt)}>{e.label}</button>
             )}
             <AccountMenu user={user} nav={nav} manage={manage} signOut={signOut} />
           </div>
@@ -293,6 +327,7 @@ function Shell() {
         {r === "brain" && <Brain />}
         {r === "learn" && <KnowledgeCentre />}
         {r === "curate" && <Curate />}
+        {r === "inbox" && <Inbox />}
         {r === "help" && <Help />}
         {r === "library" && <Library />}
         {r === "workbench" && <Workbench />}
