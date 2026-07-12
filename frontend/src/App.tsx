@@ -21,6 +21,7 @@ import Library from "./views/Library";
 import Workbench from "./views/Workbench";
 import Brain from "./views/Brain";
 import KnowledgeCentre from "./views/KnowledgeCentre";
+import Curate from "./views/Curate";
 import Journal from "./views/Journal";
 import CheckIn from "./views/CheckIn";
 import Help from "./views/Help";
@@ -51,6 +52,7 @@ const G_FAMILY: NavItem[] = [
 ];
 const G_LEARN: NavItem[] = [
   { rt: "learn", label: "Knowledge Centre", icon: "✽", sub: "Articles, papers, one-pagers" },
+  { rt: "curate", label: "Curate", icon: "\u{1F9ED}", sub: "Specialised topic toolkits" },
 ];
 
 const CHILD_NAV: NavEntry[] = [
@@ -290,6 +292,7 @@ function Shell() {
         {r === "canvas" && <Canvas />}
         {r === "brain" && <Brain />}
         {r === "learn" && <KnowledgeCentre />}
+        {r === "curate" && <Curate />}
         {r === "help" && <Help />}
         {r === "library" && <Library />}
         {r === "workbench" && <Workbench />}
