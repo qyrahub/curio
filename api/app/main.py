@@ -344,6 +344,29 @@ def read_book(book_id: str, user: dict = Depends(get_current_user)) -> Book:
     return book
 
 
+# ----- transcription (OpenAI Whisper) -----
+# Voice dictation and audio-file transcription for the Journal (and, later,
+# anywhere else that wants speech-to-text). Requires OPENAI_API_KEY. The
+# frontend records via MediaRecorder and posts the blob here — see
+# frontend/src/lib/dictation.ts for the client side.
+_TRANSCRIBE_MAX_BYTES = 25 * 1024 * 1024  # OpenAI Whisper hard limit
+
+
+@v1.post("/transcribe")
+async def transcribe(file: UploadFile = File(...),
+                     user: dict = Depends(get_current_user)) -> dict:
+    from .transcribe import openai_transcribe  # local import: avoids startup cost if unused
+    if not file.content_type or not file.content_type.startswith("audio/"):
+        raise HTTPException(400, "Expected an audio file (audio/*).")
+    audio = await file.read()
+    if len(audio) == 0:
+        raise HTTPException(400, "Empty audio upload.")
+    if len(audio) > _TRANSCRIBE_MAX_BYTES:
+        raise HTTPException(413, "Audio too large — 25 MB is the Whisper limit.")
+    text = await openai_transcribe(audio, file.filename or "audio.webm", file.content_type)
+    return {"text": text}
+
+
 # ----- auth -----
 @v1.post("/auth/signup", response_model=AuthReply)
 def signup(req: SignupRequest) -> AuthReply:

@@ -76,13 +76,18 @@
 
 /* Textarea + mic wrap (personal) */
 .jn-textwrap{ position:relative; }
-.jn-mic{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink-soft); border-radius:99px; width:38px; height:38px; display:grid; place-items:center; cursor:pointer; font-size:1.05rem; }
+.jn-mic{ border:1.5px solid var(--ring); background:var(--surface); color:var(--ink-soft); border-radius:99px; width:38px; height:38px; display:grid; place-items:center; cursor:pointer; font-size:1.05rem; font-family:inherit; }
 .jn-mic:hover{ border-color:var(--jn-accent); color:var(--jn-accent); }
 .jn-mic.on{ background:#E4634C; border-color:#E4634C; color:#fff; animation:jnPulse 1.4s ease-in-out infinite; }
-.jn-textwrap > .jn-mic{ position:absolute; right:10px; bottom:10px; }
+.jn-mic.busy{ background:var(--ink-soft); border-color:var(--ink-soft); color:#fff; cursor:progress; animation:jnBusy 1s linear infinite; }
+.jn-mic:disabled{ cursor:not-allowed; }
+.jn-mic-cluster{ position:absolute; right:10px; bottom:10px; display:flex; gap:6px; }
+.jn-mic-upload{ position:relative; }
+.jn-mic-upload input[type="file"]{ position:absolute; opacity:0; pointer-events:none; }
 .jn-mics{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
 .jn-mic.wide{ width:auto; height:auto; padding:9px 15px; font-size:.9rem; font-weight:700; border-radius:99px; }
 @keyframes jnPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(228,99,76,.55); } 50%{ box-shadow:0 0 0 8px rgba(228,99,76,0); } }
+@keyframes jnBusy { 0%,100%{ opacity:.7; } 50%{ opacity:1; } }
 
 /* Two-participant row (conversation & dialogue) */
 .jn-partrow{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }

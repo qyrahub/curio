@@ -35,6 +35,20 @@ export const api = {
   },
   workbenchImageUrl: (id: string) => `${BASE}/workbench/assets/${id}/image`,
   workbenchDelete: (id: string) => http<{ deleted: boolean }>(`/workbench/assets/${id}`, { method: "DELETE" }),
+  transcribe: async (audio: Blob, filename = "audio.webm") => {
+    const fd = new FormData();
+    fd.append("file", audio, filename);
+    const headers: Record<string, string> = {};
+    if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+    const res = await fetch(`${BASE}/transcribe`, { method: "POST", body: fd, headers });
+    if (!res.ok) {
+      // Pull the FastAPI detail if present so error messages can be surfaced.
+      let msg = `transcribe ${res.status}`;
+      try { const j = await res.json(); if (j?.detail) msg = String(j.detail); } catch { /* keep generic */ }
+      throw new Error(msg);
+    }
+    return (await res.json()) as { text: string };
+  },
   libraryFacets: () => http<LibraryFacets>("/library/facets"),
   libraryCatalog: (f: LibraryFilters = {}) => {
     const p = new URLSearchParams();

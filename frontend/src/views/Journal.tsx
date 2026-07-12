@@ -250,11 +250,19 @@ export default function Journal() {
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
               placeholder={scope === "child" ? `What did you notice about ${scopeName}?` : scope === "family" ? "A note about the family…" : "A learning idea or approach that applies to all kids…"} />
             {dictationSupported && (
-              <button className={"jn-mic" + (dict.listening ? " on" : "")}
-                onClick={() => (dict.listening ? dict.stop() : dict.start())}
-                title={dict.listening ? "Stop listening" : "Dictate — Chrome/Edge only"}>
-                {dict.listening ? "🎙️" : "🎤"}
-              </button>
+              <div className="jn-mic-cluster">
+                <label className="jn-mic jn-mic-upload" title="Transcribe an audio file">
+                  📎
+                  <input type="file" accept="audio/*" hidden disabled={dict.listening || dict.transcribing}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) dict.transcribeFile(f); e.currentTarget.value = ""; }} />
+                </label>
+                <button className={"jn-mic" + (dict.listening ? " on" : "") + (dict.transcribing ? " busy" : "")}
+                  disabled={dict.transcribing}
+                  onClick={() => (dict.listening ? dict.stop() : dict.start())}
+                  title={dict.transcribing ? "Transcribing…" : dict.listening ? "Stop recording" : "Record voice — works in Chrome, Firefox, Safari, Brave"}>
+                  {dict.transcribing ? "⋯" : dict.listening ? "🎙️" : "🎤"}
+                </button>
+              </div>
             )}
           </div>
           <div className="jn-row2">
@@ -287,13 +295,15 @@ export default function Journal() {
           </div>
           {dictationSupported && (
             <div className="jn-mics">
-              <button className={"jn-mic wide" + (dict.listening && speaker === "A" ? " on" : "")}
+              <button className={"jn-mic wide" + (dict.listening && speaker === "A" ? " on" : "") + (dict.transcribing ? " busy" : "")}
+                disabled={dict.transcribing}
                 onClick={() => { if (dict.listening && speaker === "A") { dict.stop(); } else { setSpeaker("A"); if (!dict.listening) dict.start(); } }}>
-                {dict.listening && speaker === "A" ? "🎙️ Stop" : `🎤 ${convA || "Speaker A"}`}
+                {dict.transcribing ? "⋯ Transcribing" : dict.listening && speaker === "A" ? "🎙️ Stop" : `🎤 ${convA || "Speaker A"}`}
               </button>
-              <button className={"jn-mic wide" + (dict.listening && speaker === "B" ? " on" : "")}
+              <button className={"jn-mic wide" + (dict.listening && speaker === "B" ? " on" : "") + (dict.transcribing ? " busy" : "")}
+                disabled={dict.transcribing}
                 onClick={() => { if (dict.listening && speaker === "B") { dict.stop(); } else { setSpeaker("B"); if (!dict.listening) dict.start(); } }}>
-                {dict.listening && speaker === "B" ? "🎙️ Stop" : `🎤 ${convB || "Speaker B"}`}
+                {dict.transcribing ? "⋯ Transcribing" : dict.listening && speaker === "B" ? "🎙️ Stop" : `🎤 ${convB || "Speaker B"}`}
               </button>
             </div>
           )}
@@ -334,13 +344,15 @@ export default function Journal() {
           </div>
           {dictationSupported && (
             <div className="jn-mics">
-              <button className={"jn-mic wide" + (dict.listening && speaker === "A" ? " on" : "")}
+              <button className={"jn-mic wide" + (dict.listening && speaker === "A" ? " on" : "") + (dict.transcribing ? " busy" : "")}
+                disabled={dict.transcribing}
                 onClick={() => { if (dict.listening && speaker === "A") { dict.stop(); } else { setSpeaker("A"); if (!dict.listening) dict.start(); } }}>
-                {dict.listening && speaker === "A" ? "🎙️ Stop" : `🎤 ${convA || "Me"}`}
+                {dict.transcribing ? "⋯ Transcribing" : dict.listening && speaker === "A" ? "🎙️ Stop" : `🎤 ${convA || "Me"}`}
               </button>
-              <button className={"jn-mic wide" + (dict.listening && speaker === "B" ? " on" : "")}
+              <button className={"jn-mic wide" + (dict.listening && speaker === "B" ? " on" : "") + (dict.transcribing ? " busy" : "")}
+                disabled={dict.transcribing}
                 onClick={() => { if (dict.listening && speaker === "B") { dict.stop(); } else { setSpeaker("B"); if (!dict.listening) dict.start(); } }}>
-                {dict.listening && speaker === "B" ? "🎙️ Stop" : `🎤 ${dialogueChild?.name || "Child"}`}
+                {dict.transcribing ? "⋯ Transcribing" : dict.listening && speaker === "B" ? "🎙️ Stop" : `🎤 ${dialogueChild?.name || "Child"}`}
               </button>
             </div>
           )}
