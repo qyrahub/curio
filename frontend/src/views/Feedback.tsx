@@ -4,6 +4,7 @@ import PageHero from "../components/PageHero";
 import { growth, type FeedbackItem, type ReleaseItem, type Benchmark, type Knowledge } from "../lib/growth";
 import { ISSUE_TAGS, STRENGTH_TAGS } from "../lib/tags";
 import { COUNTRIES } from "../lib/options";
+import { api } from "../lib/api";
 
 const ADMIN_EMAILS = ["thomas.marokane@gmail.com", "tech@qyrafund.com"];
 const FEATURE_STATUS = ["new", "incorporate", "scheduled", "dismissed", "shipped"];
@@ -68,13 +69,13 @@ function UserForm({ user }: { user: UserPublic | null }) {
 }
 
 function AdminPanel() {
-  const [tab, setTab] = useState<"queue" | "release" | "data" | "benchmarks" | "knowledge">("queue");
+  const [tab, setTab] = useState<"queue" | "release" | "data" | "benchmarks" | "knowledge" | "tech">("queue");
   return (
     <div style={{ marginTop: 26 }}>
       <h2 style={{ marginBottom: 10 }}>Admin</h2>
       <div className="tabs">
-        {(["queue", "release", "data", "benchmarks", "knowledge"] as const).map((t) => (
-          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : t === "data" ? "Data controls" : t === "benchmarks" ? "Benchmarks" : "Knowledge"}</button>
+        {(["queue", "release", "data", "benchmarks", "knowledge", "tech"] as const).map((t) => (
+          <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t === "queue" ? "Requests" : t === "release" ? "Release plan" : t === "data" ? "Data controls" : t === "benchmarks" ? "Benchmarks" : t === "knowledge" ? "Knowledge" : "Tech"}</button>
         ))}
       </div>
       {tab === "queue" && <Queue />}
@@ -82,6 +83,7 @@ function AdminPanel() {
       {tab === "data" && <DataControls />}
       {tab === "benchmarks" && <Benchmarks />}
       {tab === "knowledge" && <KnowledgeAdmin />}
+      {tab === "tech" && <Tech />}
     </div>
   );
 }
@@ -305,6 +307,85 @@ function KnowledgeAdmin() {
       <h3 style={{ margin: "0 0 6px" }}>Auto-draft frequency</h3>
       <p className="muted" style={{ marginTop: 0 }}>How often the AI proposes fresh knowledge entries for your review.</p>
       <div className="seg wrap">{["off", "weekly", "monthly", "quarterly"].map((f) => <button key={f} className={freq === f ? "on" : ""} onClick={() => saveFreq(f)}>{f}</button>)}</div>
+    </div>
+  );
+}
+
+function Tech() {
+  // Admin tech-error viewer. Backend redacts secrets before writing, so the
+  // upstream field is safe to display; still keep it collapsed by default.
+  const [rows, setRows] = useState<import("../types").AdminError[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const load = () => {
+    setLoading(true);
+    api.adminErrorsList(200)
+      .then((r) => setRows(r.errors))
+      .catch(() => setErr("Couldn't load errors."))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+  const purgeOld = async () => {
+    if (!confirm("Delete errors older than 2 days?")) return;
+    await api.adminErrorsPurge(2);
+    load();
+  };
+  const clearAll = async () => {
+    if (!confirm("Delete ALL errors from the log? (Cron keeps 2 days automatically.)")) return;
+    await api.adminErrorsClear();
+    load();
+  };
+  const badge = (s: number) => {
+    if (s === 401 || s === 403 || s === 402) return { l: "auth", c: "#813040", bg: "#F4E3E5" };
+    if (s === 429) return { l: "rate", c: "#9A4D00", bg: "#FFEDD5" };
+    if (s === 413) return { l: "size", c: "#9A4D00", bg: "#FFEDD5" };
+    if (s >= 500) return { l: "server", c: "#7A1D1D", bg: "#FCD7D7" };
+    if (s >= 400) return { l: "client", c: "#5B5666", bg: "#F4F1EA" };
+    return { l: String(s), c: "#5B5666", bg: "#F4F1EA" };
+  };
+  return (
+    <div className="adm-card" style={{ maxWidth: 960 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div>
+          <h3 style={{ margin: 0 }}>Technical errors</h3>
+          <p className="muted" style={{ margin: "6px 0 0" }}>Recent server-side errors, with secrets automatically redacted. Retained for 2 days (or until manually cleared).</p>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="adm-btn xs ghost" onClick={load} disabled={loading}>{loading ? "Loading…" : "Refresh"}</button>
+          <button className="adm-btn xs" onClick={purgeOld}>Purge &gt;2 days</button>
+          <button className="adm-btn xs danger" onClick={clearAll}>Clear all</button>
+        </div>
+      </div>
+      {err && <div className="fb-ok" style={{ background: "#FCD7D7", color: "#7A1D1D" }}>{err}</div>}
+      {rows.length === 0 && !loading && <div className="dv-empty" style={{ marginTop: 14 }}>No errors logged. That's a good sign.</div>}
+      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+        {rows.map((r) => {
+          const b = badge(r.status);
+          const isOpen = !!expanded[r.id];
+          return (
+            <div key={r.id} style={{ background: "var(--surface)", border: "1px solid var(--ring)", borderRadius: 11, padding: "10px 12px" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ background: b.bg, color: b.c, borderRadius: 99, padding: "3px 9px", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase" }}>{b.l} · {r.status}</span>
+                <b style={{ fontFamily: "monospace", fontSize: ".82rem" }}>{r.endpoint}</b>
+                <span className="muted" style={{ fontSize: ".78rem" }}>{new Date(r.created_at).toLocaleString()}</span>
+                {r.user_id && <span className="muted" style={{ fontSize: ".78rem" }}>· user {r.user_id.slice(0, 24)}</span>}
+              </div>
+              <div style={{ marginTop: 6, fontSize: ".92rem", color: "var(--ink)" }}>{r.message}</div>
+              {r.upstream && (
+                <div style={{ marginTop: 6 }}>
+                  <button className="adm-btn xs ghost" onClick={() => setExpanded((x) => ({ ...x, [r.id]: !isOpen }))}>
+                    {isOpen ? "Hide upstream detail" : "Show upstream detail"}
+                  </button>
+                  {isOpen && (
+                    <pre style={{ marginTop: 6, background: "var(--paper)", border: "1px solid var(--ring)", borderRadius: 8, padding: 10, fontSize: ".78rem", whiteSpace: "pre-wrap", wordBreak: "break-word", overflowX: "auto" }}>{r.upstream}</pre>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

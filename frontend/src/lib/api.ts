@@ -35,6 +35,9 @@ export const api = {
   },
   workbenchImageUrl: (id: string) => `${BASE}/workbench/assets/${id}/image`,
   workbenchDelete: (id: string) => http<{ deleted: boolean }>(`/workbench/assets/${id}`, { method: "DELETE" }),
+  adminErrorsList: (limit = 200) => http<{ errors: import("../types").AdminError[] }>(`/admin/errors?limit=${limit}`),
+  adminErrorsPurge: (olderThanDays = 2) => http<{ deleted: number }>(`/admin/errors/purge?older_than_days=${olderThanDays}`, { method: "POST" }),
+  adminErrorsClear: () => http<{ deleted: number }>(`/admin/errors`, { method: "DELETE" }),
   transcribe: async (audio: Blob, filename = "audio.webm") => {
     const fd = new FormData();
     fd.append("file", audio, filename);

@@ -95,17 +95,31 @@ export function useDictation({ onResult, onError }: {
       if (t) onResult(t);
       else raise("The transcription came back empty. Try speaking a bit longer.");
     } catch (e) {
-      const m = e instanceof Error ? e.message : "Transcription failed.";
-      // Route common backend errors to friendlier UI copy.
-      if (m.includes("not configured") || m.includes("OPENAI_API_KEY")) {
-        raise("Voice transcription isn't turned on for this server yet. Ask the admin to add OPENAI_API_KEY.");
-      } else if (m.includes("too large")) {
-        raise("That clip is over 25 MB — the transcription service can't take it. Try a shorter recording.");
-      } else if (m.includes("Empty audio")) {
-        raise("No audio was captured — try again.");
+      // Backend now returns pre-sanitised messages via _public_transcribe_message,
+      // and errorlog captures the raw upstream detail for the admin Errors tab.
+      // We never dump raw upstream text into the toast — even the backend message
+      // is filtered through an allowlist so a bad-key partial ("sk-...") can't
+      // reach the user even if it somehow slipped through.
+      const raw = e instanceof Error ? e.message : "Transcription failed.";
+      // Match on known-safe substrings from _public_transcribe_message. Anything
+      // else falls to the generic message.
+      const lower = raw.toLowerCase();
+      let msg: string;
+      if (lower.includes("isn't set up correctly") || lower.includes("configuration")) {
+        msg = "Voice transcription isn't set up on this server. Ask the admin to check the configuration.";
+      } else if (lower.includes("too long") || lower.includes("too large")) {
+        msg = "That recording is too long. Try a shorter clip.";
+      } else if (lower.includes("rate-limited") || lower.includes("temporarily")) {
+        msg = "The transcription service is busy right now. Try again in a minute.";
+      } else if (lower.includes("no audio")) {
+        msg = "No audio was captured — try again.";
+      } else if (lower.includes("unavailable") || lower.includes("try again")) {
+        msg = "Couldn't transcribe just now. Try again in a moment.";
       } else {
-        raise(`Couldn't transcribe: ${m}`);
+        // Guaranteed-safe generic — never contains upstream text.
+        msg = "Couldn't transcribe just now. Try again in a moment.";
       }
+      raise(msg);
     } finally {
       setTranscribing(false);
     }

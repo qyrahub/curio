@@ -83,3 +83,16 @@ export interface LibraryFilters {
 }
 
 export interface WorkbenchAsset { id: string; name: string; section: string; items: string[]; file: string; created: number; }
+
+export interface AdminError {
+  id: string;
+  created_at: string;
+  epoch: number;
+  endpoint: string;
+  status: number;
+  kind: string;
+  message: string;
+  upstream?: string;
+  user_id?: string;
+  extra?: Record<string, string>;
+}

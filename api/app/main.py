@@ -356,15 +356,59 @@ _TRANSCRIBE_MAX_BYTES = 25 * 1024 * 1024  # OpenAI Whisper hard limit
 async def transcribe(file: UploadFile = File(...),
                      user: dict = Depends(get_current_user)) -> dict:
     from .transcribe import openai_transcribe  # local import: avoids startup cost if unused
+    from . import errorlog
     if not file.content_type or not file.content_type.startswith("audio/"):
-        raise HTTPException(400, "Expected an audio file (audio/*).")
+        raise HTTPException(400, "Please attach an audio recording.")
     audio = await file.read()
     if len(audio) == 0:
-        raise HTTPException(400, "Empty audio upload.")
+        raise HTTPException(400, "No audio was captured.")
     if len(audio) > _TRANSCRIBE_MAX_BYTES:
-        raise HTTPException(413, "Audio too large — 25 MB is the Whisper limit.")
-    text = await openai_transcribe(audio, file.filename or "audio.webm", file.content_type)
-    return {"text": text}
+        raise HTTPException(413, "Recording is too long. Try a shorter clip.")
+    try:
+        text = await openai_transcribe(audio, file.filename or "audio.webm", file.content_type)
+        return {"text": text}
+    except HTTPException as e:
+        # Log the full server-side detail (redacted), but return a generic
+        # user-facing message so upstream errors like OpenAI's "Incorrect API
+        # key sk-..." never surface to end users.
+        upstream = str(e.detail) if e.detail else ""
+        errorlog.log_error(
+            endpoint="/v1/transcribe",
+            status=e.status_code,
+            kind="upstream_openai" if e.status_code in (401, 402, 403, 429, 502) else "transcribe",
+            message=_public_transcribe_message(e.status_code),
+            upstream=upstream,
+            user_id=str(user.get("id") or user.get("email") or ""),
+        )
+        # Rewrite the exception detail to the generic message before it goes back.
+        raise HTTPException(status_code=e.status_code, detail=_public_transcribe_message(e.status_code))
+    except Exception as e:
+        errorlog.log_error(
+            endpoint="/v1/transcribe",
+            status=500,
+            kind="transcribe_internal",
+            message="Internal error while transcribing.",
+            upstream=f"{type(e).__name__}: {e}",
+            user_id=str(user.get("id") or user.get("email") or ""),
+        )
+        raise HTTPException(500, "We couldn't finish transcribing that. Try again in a moment.")
+
+
+def _public_transcribe_message(status: int) -> str:
+    """Turn any upstream failure into copy that never mentions keys, providers,
+    URLs, models, or account IDs. Used as the response detail returned to the
+    browser; the full upstream text is separately captured in admin_errors."""
+    if status in (401, 402, 403):
+        return "Voice transcription isn't set up correctly on this server. Ask the admin to check the configuration."
+    if status == 413:
+        return "That recording is too long. Try a shorter clip."
+    if status == 429:
+        return "The transcription service is temporarily rate-limited. Try again in a minute."
+    if status == 504:
+        return "Transcription took too long to respond. Try a shorter clip."
+    if status >= 500:
+        return "The transcription service is unavailable right now. Try again shortly."
+    return "We couldn't transcribe that. Try again."
 
 
 # ----- auth -----
@@ -426,6 +470,31 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
     if (user.get("email") or "").lower() not in settings.admin_emails:
         raise HTTPException(403, "Admins only")
     return user
+
+
+# ----- admin: technical errors -----
+# (Defined here rather than up next to /transcribe so require_admin is already
+# in scope by the time these decorators evaluate.)
+@v1.get("/admin/errors")
+def admin_errors_list(limit: int = 200, user: dict = Depends(require_admin)) -> dict:
+    from . import errorlog
+    _ = user  # touched by Depends, unused here
+    return {"errors": errorlog.list_errors(limit=max(1, min(500, int(limit))))}
+
+
+@v1.post("/admin/errors/purge")
+def admin_errors_purge(older_than_days: int = 2, user: dict = Depends(require_admin)) -> dict:
+    from . import errorlog
+    _ = user
+    n = errorlog.purge_old(retain_days=max(0, int(older_than_days)))
+    return {"deleted": n}
+
+
+@v1.delete("/admin/errors")
+def admin_errors_clear(user: dict = Depends(require_admin)) -> dict:
+    from . import errorlog
+    _ = user
+    return {"deleted": errorlog.purge_all()}
 
 
 @v1.get("/growth/{kind}")
