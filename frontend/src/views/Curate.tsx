@@ -287,11 +287,39 @@ function TileView({ topicId, tileId, back, childCtx }: {
                   })}
                 </div>
               )}
+              {sec.refs && (
+                <div className="cu-refs">
+                  {sec.refs.map((r, k) => (
+                    <div className="cu-ref" key={k}>
+                      <span className={"cu-ref-kind r-" + r.kind}>{r.kind}</span>
+                      <div className="cu-ref-body">
+                        <div className="cu-ref-label">
+                          {r.url ? (
+                            <a href={r.url} target="_blank" rel="noopener noreferrer">{r.label} <span aria-hidden>↗</span></a>
+                          ) : r.label}
+                        </div>
+                        <div className="cu-ref-source">{r.source}</div>
+                        {r.note && <div className="cu-ref-note">{r.note}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {tile.kind === "medications" && (
             <div className="cu-callout">
               <b>Reminder:</b> This tile talks about families of medication only — not brand names, not doses. Specific decisions belong with your child's prescriber.
+            </div>
+          )}
+          {tile.kind === "natural" && (
+            <div className="cu-callout">
+              <b>Safety reminder:</b> Herbs and supplements can interact with medications. If your child takes anything prescribed, discuss any addition with their prescriber before starting.
+            </div>
+          )}
+          {tile.kind === "nutrition" && (
+            <div className="cu-callout">
+              <b>A note:</b> Nutrition is one input among many. For anything that could affect growth, weight, or a diagnosed condition, a paediatric dietitian or your GP is the right first stop.
             </div>
           )}
         </div>

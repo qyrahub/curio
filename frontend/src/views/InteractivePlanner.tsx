@@ -355,21 +355,21 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
 
             <div className="ip-day-grid">
               <div className="ip-day-col">
-                <div className="ip-day-secH" style={{ color: col.acc }}>Top 3 Priorities</div>
+                <div className="ip-day-secH" style={{ background: col.light, color: col.acc }}>Top 3 Priorities</div>
                 {d.priorities.map((p, pi) => (
                   <div className="ip-prio" key={pi}><b style={{ color: col.acc }}>{pi + 1}</b>
-                    <AutoTextarea value={p} onChange={(v) => patchDay(i, (x) => ({ ...x, priorities: x.priorities.map((val, j) => (j === pi ? v : val)) }))} /></div>
+                    <AutoTextarea value={p} placeholder={`Priority ${pi + 1}`} onChange={(v) => patchDay(i, (x) => ({ ...x, priorities: x.priorities.map((val, j) => (j === pi ? v : val)) }))} /></div>
                 ))}
               </div>
 
               <div className="ip-day-col ip-day-col-tasks">
-                <div className="ip-day-secH" style={{ color: col.acc }}>Tasks</div>
+                <div className="ip-day-secH" style={{ background: col.light, color: col.acc }}>Tasks</div>
                 <div className="ip-day-items">
                   {d.tasks.map((tk) => (
                     <div className={"ip-task" + (tk.done ? " done" : "")} key={tk.id}>
                       <button className={"ip-check" + (tk.done ? " on" : "")} style={tk.done ? { background: col.acc, borderColor: col.acc } : undefined}
                         onClick={() => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((v) => (v.id === tk.id ? { ...v, done: !v.done } : v)) }))}>{tk.done ? "✓" : ""}</button>
-                      <AutoTextarea value={tk.text} onChange={(v) => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((val) => (val.id === tk.id ? { ...val, text: v } : val)) }))} />
+                      <AutoTextarea value={tk.text} placeholder="Add task detail" onChange={(v) => patchDay(i, (x) => ({ ...x, tasks: x.tasks.map((val) => (val.id === tk.id ? { ...val, text: v } : val)) }))} />
                       <button className="ip-x" onClick={() => patchDay(i, (x) => ({ ...x, tasks: x.tasks.filter((v) => v.id !== tk.id) }))}>✕</button>
                     </div>
                   ))}
@@ -382,12 +382,12 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
               </div>
 
               <div className="ip-day-col">
-                <div className="ip-day-secH" style={{ color: col.acc }}>Daily Schedule</div>
+                <div className="ip-day-secH" style={{ background: col.light, color: col.acc }}>Daily Schedule</div>
                 <div className="ip-day-items">
                   {d.schedule.map((s) => (
                     <div className={"ip-slot" + (s.done ? " done" : "")} key={s.id}>
                       <input className="ip-time" value={s.time} onChange={(e) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, time: e.target.value } : v)) }))} />
-                      <AutoTextarea className="ip-slot-text" value={s.text} placeholder="…" onChange={(v) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((val) => (val.id === s.id ? { ...val, text: v } : val)) }))} />
+                      <AutoTextarea className="ip-slot-text" value={s.text} placeholder="What's on at this time?" onChange={(v) => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((val) => (val.id === s.id ? { ...val, text: v } : val)) }))} />
                       <button className={"ip-check" + (s.done ? " on" : "")} style={s.done ? { background: col.acc, borderColor: col.acc } : undefined}
                         onClick={() => patchDay(i, (x) => ({ ...x, schedule: x.schedule.map((v) => (v.id === s.id ? { ...v, done: !v.done } : v)) }))}>{s.done ? "✓" : ""}</button>
                     </div>
@@ -398,12 +398,12 @@ export default function InteractivePlanner({ embedded }: { embedded?: boolean })
             </div>
 
             <div className="ip-day-grid ip-day-grid-b">
-              {([["Notes", "notes"], ["What went well today?", "well"], ["What am I grateful for?", "grateful"]] as const).map(([label, key]) => (
+              {([["Notes", "notes", "Jot a thought…"], ["What went well today?", "well", "A moment worth naming"], ["What am I grateful for?", "grateful", "One thing"]] as const).map(([label, key, ph]) => (
                 <div className="ip-day-col" key={key}>
-                  <div className="ip-day-secH" style={{ color: col.acc }}>{label}</div>
+                  <div className="ip-day-secH" style={{ background: col.light, color: col.acc }}>{label}</div>
                   {(d[key] as string[]).map((line, li) => (
                     <div className="ip-line" key={li}><b>{li + 1}</b>
-                      <AutoTextarea value={line} onChange={(v) => patchDay(i, (x) => ({ ...x, [key]: (x[key] as string[]).map((val, j) => (j === li ? v : val)) }))} /></div>
+                      <AutoTextarea value={line} placeholder={ph} onChange={(v) => patchDay(i, (x) => ({ ...x, [key]: (x[key] as string[]).map((val, j) => (j === li ? v : val)) }))} /></div>
                   ))}
                 </div>
               ))}

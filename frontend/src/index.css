@@ -1205,14 +1205,122 @@ main.wrap{padding-bottom:110px}
 .ip-day-intent{border:0;background:transparent;font-style:italic;font-weight:700;font-size:1.05rem;padding:4px 0;font-family:inherit;resize:none;overflow:hidden;width:100%;box-sizing:border-box;line-height:1.4;color:inherit}
 .ip-day-intent:focus{outline:none;background:rgba(255,255,255,.4);border-radius:6px}
 .ip-day-ring{display:flex;flex-direction:column;align-items:center;gap:2px;flex:0 0 auto}
+
+/* Two 3-column grids for section content. Each column has a subtle wash
+   background to give the eye something to land on and separate columns. */
 .ip-day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:16px 20px 8px}
 .ip-day-grid-b{padding-top:0;padding-bottom:16px}
-.ip-day-col{display:flex;flex-direction:column;min-width:0}
+.ip-day-col{
+  display:flex; flex-direction:column; min-width:0;
+  background: color-mix(in srgb, var(--surface) 55%, var(--paper));
+  border-radius: 12px;
+  padding: 12px 12px 14px;
+}
 .ip-day-col-tasks{display:flex;flex-direction:column}
 .ip-day-col-tasks .ip-day-items{flex:1;min-height:60px}
-.ip-day-col-tasks .ip-counts{margin-top:8px}
-.ip-day-secH{font-family:"Fredoka";font-weight:700;letter-spacing:.03em;margin-bottom:6px;text-transform:uppercase;font-size:.78rem}
-.ip-day-items{display:flex;flex-direction:column;gap:2px}
+.ip-day-col-tasks .ip-counts{margin-top:auto}
+
+/* Coloured section-header pills. Background uses the day light color via inline
+   style; this rule gives shape/typography. Section header is now a proper
+   visual anchor rather than a floating label. */
+.ip-day-secH{
+  font-family:"Fredoka"; font-weight:800; letter-spacing:.06em;
+  text-transform:uppercase; font-size:.76rem;
+  padding: 7px 12px;
+  border-radius: 8px;
+  margin: -2px 0 10px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.ip-day-items{display:flex;flex-direction:column;gap:3px}
+
+/* Numbered items — the "1", "2", "3" prefix on priorities and note lines gets a
+   pill/circle background using the day accent so numbers read as anchors
+   rather than lonely digits in a sea of white. */
+.ip-day-panel .ip-prio > b,
+.ip-day-panel .ip-line > b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px; height: 22px;
+  border-radius: 99px;
+  font-size: .78rem;
+  font-weight: 800;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  flex: none;
+  padding: 0 6px;
+}
+.ip-day-panel .ip-prio,
+.ip-day-panel .ip-line {
+  padding: 4px 0;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Task / schedule rows get a subtle background so they sit as distinct rows
+   rather than floating checkboxes. */
+.ip-day-panel .ip-task,
+.ip-day-panel .ip-slot {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
+  margin-bottom: 2px;
+}
+.ip-day-panel .ip-task:hover,
+.ip-day-panel .ip-slot:hover {
+  border-color: color-mix(in srgb, var(--ink) 15%, transparent);
+}
+.ip-day-panel .ip-task.done,
+.ip-day-panel .ip-slot.done {
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  opacity: .82;
+}
+
+/* Add-task / add-slot: proper button style rather than a bare link. */
+.ip-day-panel .ip-add {
+  margin-top: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  align-self: flex-start;
+  font-weight: 800;
+  font-size: .82rem;
+  letter-spacing: .02em;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ip-day-panel .ip-add:hover { background: color-mix(in srgb, currentColor 18%, transparent); }
+
+/* Completed / outstanding pills at bottom of tasks column. */
+.ip-day-panel .ip-counts {
+  display: flex; gap: 8px; padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.ip-day-panel .ip-counts > span {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Empty-state placeholders — when a priority/task/schedule/note line has no
+   content, show a faint hint in the textarea placeholder. Handled by React
+   props on AutoTextarea where placeholders are set (or by CSS ::placeholder
+   for those without explicit placeholder text). */
+.ip-day-panel textarea::placeholder {
+  color: var(--ink-soft);
+  opacity: .5;
+  font-style: italic;
+}
+.ip-day-panel .ip-slot-text::placeholder { opacity: .35; }
+
 @media(max-width:1000px){
   .ip-day-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ip-day-title{min-width:100%}
