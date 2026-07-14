@@ -411,6 +411,76 @@ def _public_transcribe_message(status: int) -> str:
     return "We couldn't transcribe that. Try again."
 
 
+# ----- URL fetch pipeline -----
+# Fetch a URL server-side and return extracted text. Used by Curate chat so
+# the URL input actually pulls page content into the AI context rather than
+# just noting the link. See urlfetch.py for SSRF protections.
+@v1.post("/url-fetch")
+async def url_fetch(body: dict, user: dict = Depends(get_current_user)) -> dict:
+    from .urlfetch import fetch_url
+    from . import errorlog
+    url = str(body.get("url") or "").strip()
+    if not url:
+        raise HTTPException(400, "No URL provided.")
+    try:
+        result = await fetch_url(url)
+        return result
+    except HTTPException as e:
+        # Log full detail (redacted) server-side; return a sanitized message.
+        errorlog.log_error(
+            endpoint="/v1/url-fetch",
+            status=e.status_code,
+            kind="urlfetch_upstream" if e.status_code in (502, 504) else "urlfetch",
+            message=_public_urlfetch_message(e.status_code),
+            upstream=str(e.detail) if e.detail else "",
+            user_id=str(user.get("id") or user.get("email") or ""),
+            extra={"url_host": _url_host_for_log(url)},
+        )
+        raise HTTPException(status_code=e.status_code, detail=_public_urlfetch_message(e.status_code))
+    except Exception as e:
+        errorlog.log_error(
+            endpoint="/v1/url-fetch",
+            status=500,
+            kind="urlfetch_internal",
+            message="Internal error while fetching URL.",
+            upstream=f"{type(e).__name__}: {e}",
+            user_id=str(user.get("id") or user.get("email") or ""),
+            extra={"url_host": _url_host_for_log(url)},
+        )
+        raise HTTPException(500, "Couldn't read that URL. Try another one.")
+
+
+def _public_urlfetch_message(status: int) -> str:
+    """Sanitized user-facing copy for URL-fetch errors."""
+    if status == 400:
+        return "That URL doesn't look right. Check it's a full https:// address."
+    if status == 403:
+        return "That page requires sign-in — we can't read pages behind a login."
+    if status == 404:
+        return "That page wasn't found."
+    if status == 413:
+        return "That page is too large to read (2 MB limit)."
+    if status == 415:
+        return "We can only read HTML or plain-text pages. For a PDF or document, use the attach button instead."
+    if status == 422:
+        return "Couldn't find readable text on that page. It may need JavaScript to load, or the content sits behind a paywall."
+    if status == 504:
+        return "That page took too long to load. Try again or a lighter page."
+    if status >= 500:
+        return "Couldn't reach that URL right now. Try again in a moment."
+    return "Couldn't read that URL."
+
+
+def _url_host_for_log(url: str) -> str:
+    """Extract only the hostname for the admin log — avoids logging query
+    strings, paths (which can contain tokens), or credentials."""
+    try:
+        from urllib.parse import urlparse
+        return urlparse(url).hostname or ""
+    except Exception:
+        return ""
+
+
 # ----- auth -----
 @v1.post("/auth/signup", response_model=AuthReply)
 def signup(req: SignupRequest) -> AuthReply:

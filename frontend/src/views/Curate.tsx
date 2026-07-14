@@ -337,6 +337,8 @@ function ChatBox({ topic, angle, system, childCtx }: {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState("");
   const [urlInput, setUrlInput] = useState("");
+  const [urlFetched, setUrlFetched] = useState<{ title: string; text: string; url: string } | null>(null);
+  const [urlLoading, setUrlLoading] = useState(false);
   const [fileNote, setFileNote] = useState("");
   const flashSoon = (t: string) => { setFlash(t); setTimeout(() => setFlash(""), 3200); };
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -364,7 +366,7 @@ function ChatBox({ topic, angle, system, childCtx }: {
       const contextText = [
         childCtx,
         fileNote ? `\nDocument the parent shared (excerpt): ${fileNote.slice(0, 3000)}` : "",
-        urlInput.trim() ? `\nURL the parent referenced (not fetched — treat as a reference the parent asked about): ${urlInput.trim()}` : "",
+        urlFetched ? `\nWeb page the parent shared: "${urlFetched.title}" (${urlFetched.url})\n---\n${urlFetched.text.slice(0, 6000)}\n---` : "",
       ].filter(Boolean).join("\n");
       const prompt = [
         system || "You are a warm, careful parenting guide.",
@@ -412,6 +414,29 @@ function ChatBox({ topic, angle, system, childCtx }: {
     }
   };
 
+  const fetchUrl = async () => {
+    const url = urlInput.trim();
+    if (!url) return;
+    // Basic client-side check — the backend does the real validation.
+    if (!/^https?:\/\//i.test(url)) {
+      flashSoon("URLs need to start with https:// or http://");
+      return;
+    }
+    setUrlLoading(true);
+    try {
+      const res = await api.urlFetch(url);
+      setUrlFetched(res);
+      setUrlInput("");
+      flashSoon(`Fetched '${res.title}' — sent as context with your next message.`);
+    } catch (e) {
+      // Backend already sanitises the error — safe to surface directly.
+      const raw = e instanceof Error ? e.message : "Couldn't fetch that URL.";
+      flashSoon(raw);
+    } finally {
+      setUrlLoading(false);
+    }
+  };
+
   return (
     <div className="cu-chat">
       <div className="cu-chat-turns" ref={scrollRef}>
@@ -430,13 +455,13 @@ function ChatBox({ topic, angle, system, childCtx }: {
         {busy && <div className="cu-turn t-curio"><div className="cu-turn-who">Curio</div><div className="cu-turn-text cu-typing">Thinking…</div></div>}
       </div>
 
-      {(fileNote || urlInput) && (
+      {(fileNote || urlFetched) && (
         <div className="cu-chat-context">
           {fileNote && (
             <div className="cu-chip">📎 File attached · {fileNote.length.toLocaleString()} chars <button onClick={() => setFileNote("")}>×</button></div>
           )}
-          {urlInput && (
-            <div className="cu-chip">🔗 {urlInput} <button onClick={() => setUrlInput("")}>×</button></div>
+          {urlFetched && (
+            <div className="cu-chip" title={urlFetched.url}>🌐 {urlFetched.title.slice(0, 60)}{urlFetched.title.length > 60 ? "…" : ""} · {urlFetched.text.length.toLocaleString()} chars <button onClick={() => setUrlFetched(null)}>×</button></div>
           )}
         </div>
       )}
@@ -474,9 +499,14 @@ function ChatBox({ topic, angle, system, childCtx }: {
         </div>
         <div className="cu-chat-row">
           <input className="cu-url-input" type="url"
-            placeholder="Paste a URL to reference (link included in context — not fetched)"
+            placeholder={urlFetched ? "Fetch another URL…" : "Paste a URL and click Fetch — we'll pull the page text as context"}
             value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)} />
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); fetchUrl(); } }}
+            disabled={urlLoading} />
+          <button className="cu-url-btn" onClick={fetchUrl} disabled={urlLoading || !urlInput.trim()}>
+            {urlLoading ? "Fetching…" : "🌐 Fetch"}
+          </button>
         </div>
       </div>
     </div>
