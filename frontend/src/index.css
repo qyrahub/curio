@@ -321,7 +321,11 @@ main.wrap{padding-bottom:110px}
 .tile-btn:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
 .tile-cta{font-family:"Fredoka";font-weight:600;font-size:.85rem;margin-top:8px}
 .cv-overlay{position:fixed;inset:0;z-index:100;background:rgba(44,42,74,.45);backdrop-filter:blur(3px);display:grid;place-items:center;padding:18px;animation:fade .2s ease}
+.cv-overlay--full{padding:8px}
 .cv-sheet{width:min(820px,96vw);max-height:90vh;overflow:auto;background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:22px 24px 26px}
+/* Full-screen sheet for painting / colouring — the fixed 820px cap left the
+   canvas less than half the screen. */
+.cv-sheet--full{width:min(1800px,99vw);max-height:98vh;padding:14px 18px 18px;border-radius:18px}
 .cv-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .cv-head b{font-family:"Fredoka";font-weight:600;font-size:1.25rem;display:block}
 .cv-head .who{color:var(--ink-soft);font-weight:700;font-size:.82rem}
@@ -335,7 +339,22 @@ main.wrap{padding-bottom:110px}
 .paint-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .swatch{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #E7DECC;cursor:pointer;padding:0}
 .swatch.on{outline:3px solid var(--ink);outline-offset:1px}
-.paint-canvas{width:100%;height:auto;background:var(--surface);border:1px solid #F0E8DA;border-radius:16px;touch-action:none;cursor:crosshair}
+/* Two-canvas painting stack. The base canvas holds any loaded line-art (white
+   when blank); the paint canvas sits on top with mix-blend-mode:multiply when
+   there's a base loaded — so colouring with white preserves the lines (white
+   is the identity for multiply), colouring with any other colour darkens where
+   it overlaps a line, and the eraser (destination-out) only touches the paint
+   layer so the picture itself is never damaged. `isolation:isolate` keeps the
+   blend scoped — it must only mix with the base canvas, never with the page
+   or modal underneath. */
+.paint-stage{position:relative;isolation:isolate;width:100%;background:#fff;border:1px solid #F0E8DA;border-radius:16px;overflow:hidden;line-height:0;margin:4px auto 0}
+.paint-stage canvas{display:block;width:100%;height:auto;background:transparent}
+.paint-stage .paint-base{position:relative;z-index:0}
+.paint-stage .paint-canvas{position:absolute;inset:0;z-index:1;touch-action:none;cursor:crosshair;background:transparent;border:0;border-radius:0}
+.paint-stage .paint-canvas--multiply{mix-blend-mode:multiply}
+/* --fit: coloring book uses the image's own aspect — don't cap width via
+   intrinsic canvas size, let the natural width fill. */
+.paint-stage--fit{max-width:100%;margin-inline:auto}
 
 /* brain: file input + drill-down */
 .file-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
@@ -420,6 +439,8 @@ main.wrap{padding-bottom:110px}
 
 /* canvas games + coloring + paint reference */
 .paint-ref{display:flex;gap:14px;align-items:center;background:var(--paper-2);border:1px solid #F0E8DA;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.paint-ref--slim{padding:8px 12px;margin-bottom:8px}
+.paint-ref--slim .paint-ref-pic{width:52px;height:52px;font-size:2.4rem;border-radius:12px}
 .paint-ref-pic{font-size:3.4rem;line-height:1;flex:0 0 auto;width:72px;height:72px;background:var(--surface);border-radius:14px;display:grid;place-items:center;box-shadow:var(--shadow-sm)}
 .match-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:0 auto}
 .match-card{aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(180deg,var(--coral),var(--coral-deep));color:#fff;font-size:2rem;cursor:pointer;display:grid;place-items:center;transition:transform .12s}
@@ -431,6 +452,9 @@ main.wrap{padding-bottom:110px}
 .tetris-ctrl{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:12px;flex-wrap:wrap}
 .round-btn{width:46px;height:46px;border-radius:50%;border:0;cursor:pointer;font-size:1.2rem;background:var(--surface);box-shadow:var(--shadow-sm);border:1px solid #F0E8DA}
 .coloring-svg{width:100%;max-width:420px;display:block;margin:8px auto;background:var(--surface);border:1px solid #F0E8DA;border-radius:14px}
+/* Full-screen colouring: let the SVG pages fill the wide modal. */
+.cv-sheet--full .coloring-svg{max-width:none}
+.cv-sheet--full .color-thumb .coloring-svg{max-width:220px}
 
 /* Ask Curio voice chat */
 .askcurio{background:linear-gradient(135deg,#FFF1D2,#FFE0D2);border:2px solid #FFD7B0;border-radius:20px;padding:16px 18px;margin:18px 0 8px}
@@ -569,8 +593,8 @@ main.wrap{padding-bottom:110px}
 .speed-btn{border:1px solid var(--ring);background:var(--surface);border-radius:12px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer;min-width:96px;text-align:left}
 .speed-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* Colouring scroll */
-.coloring-scroll{max-height:62vh;overflow:auto;background:var(--surface);border:1px solid #F0E8DA;border-radius:14px;padding:6px;margin-top:6px}
-.coloring-scroll .coloring-svg{width:100%;height:auto;display:block}
+.coloring-scroll{max-height:78vh;overflow:auto;background:var(--surface);border:1px solid #F0E8DA;border-radius:14px;padding:6px;margin-top:6px}
+.coloring-scroll .coloring-svg{width:100%;max-width:none;height:auto;display:block}
 
 /* workbench */
 .wb-form{max-width:640px}

@@ -127,63 +127,144 @@ const PAINT_COLORS = ["#FF7A66", "#F2563D", "#FFC94D", "#FFB703", "#5BBF8A", "#2
   "#4C7AE0", "#9B6DD6", "#C45CB0", "#FF7AA8", "#9C6B3F", "#2C2A4A", "#7A7A7A", "#FFFFFF", "#000000"];
 const STAMPS = ["⭐", "❤️", "🌸", "🐱", "🦋", "🌈", "☁️", "🐠", "🌟", "🍀"];
 
+// PaintPad — rebuilt with a two-canvas stack so the loaded line-art is on a
+// separate layer below the paint. The top (paint) layer uses mix-blend-mode:
+// multiply when a base is loaded, which keeps dark lines dark no matter what
+// colour (or white) the parent paints over them. The eraser lives on the top
+// layer only, so wiping paint never destroys the picture underneath.
+const PAINT_W = 1600;
+const PAINT_H = 900;
+
 function PaintPad() {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+  const baseRef = useRef<HTMLCanvasElement | null>(null);  // bottom: line art / blank
+  const ref = useRef<HTMLCanvasElement | null>(null);      // top: user strokes
   const [color, setColor] = useState("#FF7A66");
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState(14);
   const [tool, setTool] = useState<"brush" | "marker" | "spray" | "eraser" | "stamp">("brush");
   const [stamp, setStamp] = useState("⭐");
   const [ideaIdx, setIdeaIdx] = useState(() => Math.floor(Math.random() * PAINT_IDEAS.length));
   const [idea, refEmoji] = PAINT_IDEAS[ideaIdx];
+  const [hasBase, setHasBase] = useState(false);
   const drawing = useRef(false);
+  const strokeTouched = useRef(false);  // true if the current stroke has drawn anything
+  // Undo history — one ImageData snapshot of the top (paint) canvas per stroke.
+  // Capped at 8 (~45MB at 1600x900 RGBA) to avoid blowing out memory.
+  const historyRef = useRef<ImageData[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
   const [bases, setBases] = useState<WorkbenchAsset[]>([]);
   useEffect(() => { api.workbenchAssets("painting").then((r) => setBases(r.assets)).catch(() => {}); }, []);
+  // Initialise the base canvas with white so the paint layer (multiply) has
+  // something sensible to blend against before any image is loaded.
+  useEffect(() => {
+    const base = baseRef.current; if (!base) return;
+    const bctx = base.getContext("2d"); if (!bctx) return;
+    bctx.fillStyle = "#fff";
+    bctx.fillRect(0, 0, base.width, base.height);
+  }, []);
   const loadBase = (a: WorkbenchAsset) => {
-    const c = ref.current!; const ctx = c.getContext("2d")!;
-    const img = new Image();
+    const base = baseRef.current!; const bctx = base.getContext("2d")!;
+    const top = ref.current!; const tctx = top.getContext("2d")!;
+    const img = new Image(); img.crossOrigin = "anonymous";
     img.onload = () => {
-      ctx.clearRect(0, 0, c.width, c.height);
-      const r = Math.min(c.width / img.width, c.height / img.height);
+      // Reset base to white, then draw the picture scaled to fit.
+      bctx.clearRect(0, 0, base.width, base.height);
+      bctx.fillStyle = "#fff";
+      bctx.fillRect(0, 0, base.width, base.height);
+      const r = Math.min(base.width / img.width, base.height / img.height);
       const w = img.width * r, h = img.height * r;
-      ctx.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h);
+      bctx.drawImage(img, (base.width - w) / 2, (base.height - h) / 2, w, h);
+      // Clear any existing paint so the parent gets a clean start on the new picture.
+      tctx.clearRect(0, 0, top.width, top.height);
+      historyRef.current = [];
+      setCanUndo(false);
+      setHasBase(true);
     };
     img.src = api.workbenchImageUrl(a.id);
+  };
+  const removeBase = () => {
+    const base = baseRef.current!; const bctx = base.getContext("2d")!;
+    bctx.clearRect(0, 0, base.width, base.height);
+    bctx.fillStyle = "#fff";
+    bctx.fillRect(0, 0, base.width, base.height);
+    setHasBase(false);
   };
   const ctxOf = () => ref.current!.getContext("2d")!;
   const pos = (e: React.PointerEvent) => {
     const c = ref.current!; const r = c.getBoundingClientRect();
     return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
   };
+  const pushHistory = () => {
+    try {
+      const top = ref.current!; const ctx = top.getContext("2d")!;
+      historyRef.current.push(ctx.getImageData(0, 0, top.width, top.height));
+      if (historyRef.current.length > 8) historyRef.current.shift();
+      setCanUndo(true);
+    } catch { /* ignore OOM / tainted canvas */ }
+  };
+  const undo = () => {
+    const prev = historyRef.current.pop();
+    if (!prev) { setCanUndo(false); return; }
+    const top = ref.current!; const ctx = top.getContext("2d")!;
+    ctx.putImageData(prev, 0, 0);
+    setCanUndo(historyRef.current.length > 0);
+  };
   const dab = (x: number, y: number) => {
+    if (tool !== "spray") return;
     const ctx = ctxOf();
-    if (tool === "spray") {
-      ctx.fillStyle = color;
-      for (let i = 0; i < 18; i++) {
-        const a = Math.random() * Math.PI * 2, rr = Math.random() * size * 1.6;
-        ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, 0.8, 0, Math.PI * 2); ctx.fill();
-      }
+    ctx.fillStyle = color;
+    for (let i = 0; i < 18; i++) {
+      const a = Math.random() * Math.PI * 2, rr = Math.random() * size * 1.6;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, 0.8, 0, Math.PI * 2); ctx.fill();
     }
+    strokeTouched.current = true;
   };
   const start = (e: React.PointerEvent) => {
+    pushHistory();
     const p = pos(e);
-    if (tool === "stamp") { const ctx = ctxOf(); ctx.font = `${size * 3}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(stamp, p.x, p.y); return; }
-    drawing.current = true; const ctx = ctxOf(); ctx.beginPath(); ctx.moveTo(p.x, p.y); dab(p.x, p.y);
+    if (tool === "stamp") {
+      const ctx = ctxOf();
+      ctx.font = `${size * 3}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(stamp, p.x, p.y);
+      strokeTouched.current = true;
+      return;
+    }
+    drawing.current = true;
+    strokeTouched.current = false;
+    const ctx = ctxOf();
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    dab(p.x, p.y);
+    try { (e.target as Element).setPointerCapture(e.pointerId); } catch { /* ignore */ }
   };
   const move = (e: React.PointerEvent) => {
-    if (!drawing.current) return; const ctx = ctxOf(); const p = pos(e);
+    if (!drawing.current) return;
+    const ctx = ctxOf(); const p = pos(e);
     if (tool === "spray") { dab(p.x, p.y); return; }
     ctx.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
     ctx.lineTo(p.x, p.y);
     ctx.strokeStyle = color;
-    ctx.lineWidth = tool === "marker" ? size * 1.8 : tool === "eraser" ? size * 2.2 : size;
+    ctx.lineWidth = tool === "marker" ? size * 1.8 : tool === "eraser" ? size * 2.4 : size;
     ctx.lineCap = tool === "marker" ? "square" : "round";
     ctx.lineJoin = "round";
     ctx.globalAlpha = tool === "marker" ? 0.7 : 1;
     ctx.stroke();
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+    strokeTouched.current = true;
   };
-  const end = () => { drawing.current = false; };
-  const clear = () => { const c = ref.current!; ctxOf().clearRect(0, 0, c.width, c.height); };
+  const end = () => {
+    drawing.current = false;
+    // Pop the untouched snapshot we pushed on start so undo only rolls back real strokes.
+    if (!strokeTouched.current) {
+      historyRef.current.pop();
+      setCanUndo(historyRef.current.length > 0);
+    }
+    strokeTouched.current = false;
+  };
+  const clearPaint = () => {
+    const top = ref.current!;
+    top.getContext("2d")!.clearRect(0, 0, top.width, top.height);
+    historyRef.current = [];
+    setCanUndo(false);
+  };
 
   const TOOLS: [typeof tool, string, string][] = [
     ["brush", "🖌️", "Brush"], ["marker", "🖊️", "Marker"], ["spray", "💨", "Spray"],
@@ -191,12 +272,15 @@ function PaintPad() {
   ];
   return (
     <div className="paint">
-      <div className="paint-ref">
+      <div className="paint-ref paint-ref--slim">
         <div className="paint-ref-pic">{refEmoji}</div>
         <div>
           <p className="cv-intro" style={{ margin: 0 }}>Try painting <b>{idea}</b></p>
-          <p className="muted">Look at the picture for an idea — then make it your own!</p>
-          <button className="btn btn-ghost btn-sm" onClick={() => setIdeaIdx((i) => (i + 1) % PAINT_IDEAS.length)}>🎲 New picture</button>
+          <p className="muted" style={{ margin: "4px 0 0" }}>Pick a picture to colour in, or paint your own on a blank page.</p>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setIdeaIdx((i) => (i + 1) % PAINT_IDEAS.length)}>🎲 New idea</button>
+          {hasBase && <button className="btn btn-ghost btn-sm" onClick={removeBase}>✖ Remove picture</button>}
         </div>
       </div>
       <div className="paint-bar">
@@ -207,16 +291,21 @@ function PaintPad() {
         {PAINT_COLORS.map((c) => (
           <button key={c} className={"swatch" + (color === c ? " on" : "")} style={{ background: c }} onClick={() => { setColor(c); if (tool === "eraser") setTool("brush"); }} aria-label={c} />
         ))}
-      </div>
-      <div className="paint-bar">
-        <span className="muted">Size</span>
-        <input type="range" min={2} max={36} value={size} onChange={(e) => setSize(Number(e.target.value))} />
-        {tool === "stamp" && STAMPS.map((s) => (
-          <button key={s} className={"tool-btn" + (stamp === s ? " on" : "")} onClick={() => setStamp(s)}>{s}</button>
-        ))}
         <span className="paint-sep" />
-        <button className="btn btn-ghost btn-sm" onClick={clear}>🗑️ Clear all</button>
+        <span className="muted">Size</span>
+        <input type="range" min={2} max={60} value={size} onChange={(e) => setSize(Number(e.target.value))} />
+        <span className="paint-sep" />
+        <button className="btn btn-ghost btn-sm" onClick={undo} disabled={!canUndo} title="Undo last stroke">↶ Undo</button>
+        <button className="btn btn-ghost btn-sm" onClick={clearPaint}>🗑️ Clear paint</button>
       </div>
+      {tool === "stamp" && (
+        <div className="paint-bar">
+          <span className="muted">Stamp</span>
+          {STAMPS.map((s) => (
+            <button key={s} className={"tool-btn" + (stamp === s ? " on" : "")} onClick={() => setStamp(s)}>{s}</button>
+          ))}
+        </div>
+      )}
       {bases.length > 0 && (
         <div className="paint-bases">
           <span className="muted">🎨 Illustrations to paint:</span>
@@ -227,8 +316,12 @@ function PaintPad() {
           ))}
         </div>
       )}
-      <canvas ref={ref} width={780} height={440} className="paint-canvas"
-        onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} />
+      <div className="paint-stage">
+        <canvas ref={baseRef} width={PAINT_W} height={PAINT_H} className="paint-base" />
+        <canvas ref={ref} width={PAINT_W} height={PAINT_H}
+          className={"paint-canvas" + (hasBase ? " paint-canvas--multiply" : "")}
+          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} />
+      </div>
     </div>
   );
 }
@@ -1600,45 +1693,135 @@ function buildCollages(): ColPage[] {
 }
 const COL_PAGES = buildCollages();
 
-// Paint-over colouring for uploaded raster line-art (multiply keeps the black lines).
+// Paint-over colouring for uploaded raster line-art. Uses a two-canvas stack:
+// base canvas (bottom) holds the line art, paint canvas (top) uses mix-blend-mode:
+// multiply so colour paint lets the dark lines show through, and the eraser only
+// touches the paint layer so the picture itself is never damaged.
 function ImageColor({ src }: { src: string }) {
+  const baseRef = useRef<HTMLCanvasElement | null>(null);
   const ref = useRef<HTMLCanvasElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [ready, setReady] = useState(false);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const strokeTouched = useRef(false);
+  const historyRef = useRef<ImageData[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
   const [color, setColor] = useState("#FF7A66");
-  const [size, setSize] = useState(16);
-  const redraw = () => {
-    const cv = ref.current, img = imgRef.current; if (!cv || !img) return;
-    const ctx = cv.getContext("2d")!; ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
-    ctx.drawImage(img, 0, 0, cv.width, cv.height);
-  };
+  const [size, setSize] = useState(22);
+  const [erase, setErase] = useState(false);
   useEffect(() => {
     const img = new Image(); img.crossOrigin = "anonymous";
-    img.onload = () => { const cv = ref.current!; const W = 540; const sc = W / img.width; cv.width = W; cv.height = Math.round(img.height * sc); imgRef.current = img; redraw(); };
+    img.onload = () => {
+      const base = baseRef.current, top = ref.current;
+      if (!base || !top) return;
+      // Scale to a sensible maximum so the picture is large and crisp inside the
+      // modal regardless of the uploaded resolution.
+      const W = Math.min(1200, Math.max(img.width, 900));
+      const sc = W / img.width;
+      const H = Math.round(img.height * sc);
+      base.width = W; base.height = H;
+      top.width = W; top.height = H;
+      const bctx = base.getContext("2d")!;
+      bctx.fillStyle = "#fff";
+      bctx.fillRect(0, 0, W, H);
+      bctx.drawImage(img, 0, 0, W, H);
+      // Paint layer stays transparent to start — multiply blend will show the
+      // base through until the parent paints something.
+      top.getContext("2d")!.clearRect(0, 0, W, H);
+      historyRef.current = [];
+      setCanUndo(false);
+      setReady(true);
+    };
     img.src = src;
   }, [src]);
-  const pos = (e: React.PointerEvent) => { const r = ref.current!.getBoundingClientRect(); return { x: (e.clientX - r.left) * (ref.current!.width / r.width), y: (e.clientY - r.top) * (ref.current!.height / r.height) }; };
-  const down = (e: React.PointerEvent) => { drawing.current = true; last.current = pos(e); (e.target as HTMLElement).setPointerCapture(e.pointerId); };
-  const move = (e: React.PointerEvent) => {
-    if (!drawing.current) return; const ctx = ref.current!.getContext("2d")!; const p = pos(e);
-    ctx.globalCompositeOperation = "multiply"; ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath(); ctx.moveTo(last.current!.x, last.current!.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last.current = p;
+  const pos = (e: React.PointerEvent) => {
+    const r = ref.current!.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (ref.current!.width / r.width), y: (e.clientY - r.top) * (ref.current!.height / r.height) };
   };
-  const up = () => { drawing.current = false; last.current = null; };
+  const pushHistory = () => {
+    try {
+      const top = ref.current!; const ctx = top.getContext("2d")!;
+      historyRef.current.push(ctx.getImageData(0, 0, top.width, top.height));
+      if (historyRef.current.length > 10) historyRef.current.shift();
+      setCanUndo(true);
+    } catch { /* ignore OOM */ }
+  };
+  const undo = () => {
+    const prev = historyRef.current.pop();
+    if (!prev) { setCanUndo(false); return; }
+    const top = ref.current!; const ctx = top.getContext("2d")!;
+    ctx.putImageData(prev, 0, 0);
+    setCanUndo(historyRef.current.length > 0);
+  };
+  const down = (e: React.PointerEvent) => {
+    if (!ready) return;
+    pushHistory();
+    drawing.current = true;
+    strokeTouched.current = false;
+    last.current = pos(e);
+    try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  };
+  const move = (e: React.PointerEvent) => {
+    if (!drawing.current) return;
+    const ctx = ref.current!.getContext("2d")!;
+    const p = pos(e);
+    ctx.globalCompositeOperation = erase ? "destination-out" : "source-over";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = erase ? size * 1.4 : size;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(last.current!.x, last.current!.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";
+    last.current = p;
+    strokeTouched.current = true;
+  };
+  const up = () => {
+    drawing.current = false;
+    last.current = null;
+    if (!strokeTouched.current) {
+      historyRef.current.pop();
+      setCanUndo(historyRef.current.length > 0);
+    }
+    strokeTouched.current = false;
+  };
+  const clearPaint = () => {
+    const top = ref.current; if (!top) return;
+    top.getContext("2d")!.clearRect(0, 0, top.width, top.height);
+    historyRef.current = [];
+    setCanUndo(false);
+  };
   return (
     <div>
       <div className="paint-bar">
-        {COLOR_PALETTE.map((cc) => <button key={cc} className={"swatch" + (color === cc ? " on" : "")} style={{ background: cc }} onClick={() => setColor(cc)} />)}
+        {COLOR_PALETTE.map((cc) => (
+          <button key={cc}
+            className={"swatch" + (!erase && color === cc ? " on" : "")}
+            style={{ background: cc }}
+            onClick={() => { setColor(cc); setErase(false); }}
+            aria-label={cc} />
+        ))}
+        <span className="paint-sep" />
+        <button className={"tool-btn" + (erase ? " on" : "")} title="Eraser" onClick={() => setErase((v) => !v)}>🧽</button>
       </div>
       <div className="paint-bar">
         <span className="dress-lbl">Brush</span>
-        {[8, 16, 28, 44].map((s) => <button key={s} className={"pill" + (size === s ? " on" : "")} aria-pressed={size === s} onClick={() => setSize(s)}>{s <= 8 ? "S" : s <= 16 ? "M" : s <= 28 ? "L" : "XL"}</button>)}
-        <button className="btn btn-ghost btn-sm" onClick={redraw}>🗑️ Clear</button>
+        {[10, 22, 36, 56].map((s) => (
+          <button key={s} className={"pill" + (size === s ? " on" : "")} aria-pressed={size === s} onClick={() => setSize(s)}>
+            {s <= 10 ? "S" : s <= 22 ? "M" : s <= 36 ? "L" : "XL"}
+          </button>
+        ))}
+        <span className="paint-sep" />
+        <button className="btn btn-ghost btn-sm" onClick={undo} disabled={!canUndo}>↶ Undo</button>
+        <button className="btn btn-ghost btn-sm" onClick={clearPaint}>🗑️ Clear paint</button>
       </div>
-      <canvas ref={ref} className="coloring-svg" style={{ touchAction: "none", width: "100%", maxWidth: 540 }}
-        onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} />
+      <div className="paint-stage paint-stage--fit">
+        <canvas ref={baseRef} className="paint-base" />
+        <canvas ref={ref} className="paint-canvas paint-canvas--multiply"
+          style={{ cursor: erase ? "cell" : "crosshair" }}
+          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up} />
+      </div>
     </div>
   );
 }
@@ -1946,6 +2129,9 @@ function HouseBuilder() {
 function ActivityModal({ tool, onClose }: { tool: CanvasTool; onClose: () => void }) {
   const t = tool.title.toLowerCase();
   const isGame = /match|bubble|pop|shooter|ricochet|deflect|search|find|tetris|block|scramble|word|trivia|quiz|puzzle/.test(t);
+  // Painting and colouring need the whole viewport — the fixed 820px sheet
+  // left the canvas less than half the screen.
+  const needsFullScreen = /paint|colour|color/.test(t);
   const [muted, setMuted] = useState(isMuted());
   useEffect(() => {
     if (isGame) startMusic();
@@ -1969,8 +2155,8 @@ function ActivityModal({ tool, onClose }: { tool: CanvasTool; onClose: () => voi
     : /song|music|beat/.test(t) ? <SongStudio />
     : <GuidedActivity tool={tool} />;
   return (
-    <div className="cv-overlay" onClick={onClose}>
-      <div className="cv-sheet" onClick={(e) => e.stopPropagation()}>
+    <div className={"cv-overlay" + (needsFullScreen ? " cv-overlay--full" : "")} onClick={onClose}>
+      <div className={"cv-sheet" + (needsFullScreen ? " cv-sheet--full" : "")} onClick={(e) => e.stopPropagation()}>
         <div className="cv-head">
           <span className="tic" style={{ background: tool.color }}>{tool.icon}</span>
           <div><b>{tool.title}</b><span className="who">{tool.name}</span></div>
