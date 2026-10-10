@@ -1841,9 +1841,10 @@ function ImageColor({ src }: { src: string }) {
     img.onload = () => {
       const base = baseRef.current, top = ref.current;
       if (!base || !top) return;
-      // Scale to a sensible maximum so the picture is large and crisp inside the
-      // modal regardless of the uploaded resolution.
-      const W = Math.min(1200, Math.max(img.width, 900));
+      // Use the image's natural width, capped at 1600 for memory sanity. The
+      // display size is driven by useFitSize so canvas resolution only matters
+      // for drawing crispness, not visible size.
+      const W = Math.min(1600, Math.max(400, img.width));
       const sc = W / img.width;
       const H = Math.round(img.height * sc);
       base.width = W; base.height = H;
@@ -2202,110 +2203,740 @@ function DSw({ label, arr, val, on }: { label: string; arr: string[]; val: strin
 }
 
 // ---------- House builder (clean rooms + suggest guides) ----------
-const ROOMS: Record<string, { label: string; wall: string; floor: string; seam: string }> = {
-  living: { label: "Living room", wall: "#EAF2FB", floor: "#E7D2B4", seam: "#C9A876" },
-  bedroom: { label: "Bedroom", wall: "#F3E8FB", floor: "#E7D2B4", seam: "#C9A876" },
-  kitchen: { label: "Kitchen", wall: "#E8F7F0", floor: "#DCC6A8", seam: "#BCA079" },
-  garden: { label: "Garden", wall: "#D7EEFF", floor: "#BFE3A8", seam: "#8FBE76" },
-};
-const ARRANGE: Record<string, { e: string; x: number; y: number }[][]> = {
-  living: [
-    [{ e: "🛋️", x: 30, y: 72 }, { e: "📺", x: 30, y: 30 }, { e: "🪴", x: 78, y: 70 }, { e: "🖼️", x: 70, y: 26 }],
-    [{ e: "🛋️", x: 55, y: 74 }, { e: "🪑", x: 22, y: 70 }, { e: "📺", x: 80, y: 32 }, { e: "🕯️", x: 50, y: 40 }],
-    [{ e: "🪑", x: 30, y: 72 }, { e: "🪑", x: 60, y: 72 }, { e: "🪴", x: 85, y: 70 }, { e: "🖼️", x: 45, y: 24 }],
-    [{ e: "🛋️", x: 40, y: 76 }, { e: "🪴", x: 14, y: 72 }, { e: "🪴", x: 86, y: 72 }, { e: "📺", x: 50, y: 28 }],
-    [{ e: "🛋️", x: 28, y: 70 }, { e: "🛋️", x: 70, y: 70 }, { e: "🕯️", x: 50, y: 42 }, { e: "🖼️", x: 50, y: 22 }],
-  ],
-  bedroom: [
-    [{ e: "🛏️", x: 32, y: 70 }, { e: "🪟", x: 70, y: 28 }, { e: "🪴", x: 82, y: 70 }, { e: "🖼️", x: 30, y: 26 }],
-    [{ e: "🛏️", x: 60, y: 72 }, { e: "🕯️", x: 24, y: 66 }, { e: "🪞", x: 84, y: 60 }, { e: "🖼️", x: 50, y: 24 }],
-    [{ e: "🛏️", x: 40, y: 74 }, { e: "🧸", x: 70, y: 74 }, { e: "🪟", x: 50, y: 26 }, { e: "🪴", x: 16, y: 70 }],
-    [{ e: "🛏️", x: 28, y: 72 }, { e: "🪑", x: 66, y: 70 }, { e: "🪟", x: 80, y: 28 }, { e: "🕯️", x: 20, y: 60 }],
-    [{ e: "🛏️", x: 50, y: 74 }, { e: "🧸", x: 22, y: 74 }, { e: "🪴", x: 80, y: 72 }, { e: "🖼️", x: 50, y: 22 }],
-  ],
-  kitchen: [
-    [{ e: "🧊", x: 22, y: 64 }, { e: "🍳", x: 50, y: 66 }, { e: "🍽️", x: 76, y: 72 }, { e: "🪟", x: 78, y: 26 }],
-    [{ e: "🍽️", x: 50, y: 72 }, { e: "🪑", x: 30, y: 70 }, { e: "🪑", x: 70, y: 70 }, { e: "🫖", x: 50, y: 50 }],
-    [{ e: "🧊", x: 80, y: 64 }, { e: "🍳", x: 30, y: 66 }, { e: "☕", x: 52, y: 56 }, { e: "🪟", x: 50, y: 26 }],
-    [{ e: "🍽️", x: 30, y: 72 }, { e: "🍽️", x: 64, y: 72 }, { e: "🫖", x: 84, y: 60 }, { e: "🪴", x: 16, y: 66 }],
-    [{ e: "🍳", x: 24, y: 66 }, { e: "🧊", x: 76, y: 64 }, { e: "🥣", x: 50, y: 72 }, { e: "🪟", x: 50, y: 24 }],
-  ],
-  garden: [
-    [{ e: "🌳", x: 24, y: 56 }, { e: "🌸", x: 60, y: 76 }, { e: "🪴", x: 80, y: 72 }, { e: "☀️", x: 80, y: 22 }],
-    [{ e: "🌳", x: 78, y: 56 }, { e: "🪑", x: 30, y: 74 }, { e: "🐕", x: 55, y: 78 }, { e: "🌸", x: 18, y: 76 }],
-    [{ e: "🌳", x: 50, y: 52 }, { e: "🌸", x: 24, y: 78 }, { e: "🌸", x: 76, y: 78 }, { e: "🦜", x: 60, y: 30 }],
-    [{ e: "🌳", x: 20, y: 56 }, { e: "🌳", x: 80, y: 56 }, { e: "⚽", x: 50, y: 80 }, { e: "🐈", x: 35, y: 78 }],
-    [{ e: "🪴", x: 30, y: 74 }, { e: "🌸", x: 55, y: 76 }, { e: "🦜", x: 75, y: 34 }, { e: "☀️", x: 22, y: 22 }],
-  ],
-};
-const HOUSE_ITEMS: [string, string[]][] = [
-  ["Furniture", ["🛋️", "🪑", "🛏️", "🚪", "🪟", "🖼️", "🪴", "🛁", "🚽", "🪞", "🕯️", "📺"]],
-  ["Kitchen", ["🍽️", "🍳", "☕", "🧊", "🥣", "🫖"]],
-  ["People", ["👩", "👨", "🧒", "👶", "👵", "👴"]],
-  ["Pets", ["🐕", "🐈", "🐠", "🐰", "🐹", "🦜"]],
-  ["Fun", ["🧸", "⚽", "🎈", "🪀", "🎨", "📚", "🌟", "🪁"]],
-];
-function HouseBuilder() {
-  const [room, setRoom] = useState("living");
-  const [items, setItems] = useState<{ id: number; e: string; x: number; y: number }[]>([]);
-  const [sugg, setSugg] = useState(-1);
-  const idRef = useRef(0);
-  const drag = useRef<{ id: number; dx: number; dy: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const add = (ej: string) => setItems((i) => [...i, { id: idRef.current++, e: ej, x: 44 + Math.random() * 30, y: 60 + Math.random() * 16 }]);
-  const onDown = (ev: React.PointerEvent, id: number) => {
-    const it = items.find((t) => t.id === id); if (!it) return;
-    const r = wrapRef.current!.getBoundingClientRect();
-    drag.current = { id, dx: ev.clientX - r.left - (it.x / 100) * r.width, dy: ev.clientY - r.top - (it.y / 100) * r.height };
-    (ev.target as HTMLElement).setPointerCapture(ev.pointerId);
+// ---------- Galaxy Shooter ----------
+// 20 stages. Each wave is cleared by shooting all its enemies. Clearing a
+// wave upgrades the ship (bigger, better guns) and spawns the next wave.
+// Pickups drop randomly inside a wave: bomb, bigger gun, stun, shield, beam.
+// Arrow / WASD keys move; Space shoots. Mouse also moves + click shoots so
+// it's child-friendly without needing to learn two controls at once.
+const GS_W = 960, GS_H = 540;
+
+interface GSEnemy { x: number; y: number; vx: number; vy: number; hp: number; r: number; shootT: number; kind: number; }
+interface GSBullet { x: number; y: number; vx: number; vy: number; r: number; from: "me" | "foe"; power?: number; }
+interface GSPickup { x: number; y: number; vy: number; kind: "bomb" | "gun" | "stun" | "shield" | "beam"; }
+interface GSFx { x: number; y: number; t: number; r: number; kind: "boom" | "spark" | "ring"; }
+
+function GalaxyShooter() {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const [stage, setStage] = useState(1);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [over, setOver] = useState(false);
+  const [won, setWon] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [stageMsg, setStageMsg] = useState<string>("Stage 1 — tap or press Space to start");
+  // Live refs so the RAF loop and keyboard handler stay in sync without re-registering.
+  const stageRef = useRef(1);
+  const scoreRef = useRef(0);
+  const livesRef = useRef(3);
+  const overRef = useRef(false);
+  const wonRef = useRef(false);
+  const pausedRef = useRef(false);
+  const startedRef = useRef(false);
+  const state = useRef({
+    ship: { x: GS_W / 2, y: GS_H - 56, vx: 0, w: 36, h: 24 },
+    bullets: [] as GSBullet[],
+    enemies: [] as GSEnemy[],
+    pickups: [] as GSPickup[],
+    fx: [] as GSFx[],
+    weapon: 1,          // 1=single, 2=double, 3=triple spread, 4=triple+homing
+    shield: 0,          // frames of shield remaining
+    stun: 0,            // frames enemies are frozen
+    beam: 0,            // frames beam weapon active
+    fireCool: 0,
+    spawnTimer: 0,
+    waveLeft: 0,        // enemies yet to spawn in this wave
+    keys: {} as Record<string, boolean>,
+    mouseX: null as number | null,
+    mouseDown: false,
+  });
+  const SHIP_COLORS = ["#5AA7E6", "#2EC4B6", "#9B6DD6", "#FFC94D"];
+  const ENEMY_COLORS = ["#FF7AA8", "#E4634C", "#9B6DD6", "#5BBF8A", "#FFC94D"];
+
+  // Tier of ship visuals and base weapon power: upgrades every 5 stages.
+  const tier = (s: number) => Math.min(4, Math.floor((s - 1) / 5) + 1);
+  const waveSize = (s: number) => 5 + Math.min(20, s * 2);
+  const enemyHp = (s: number) => 1 + Math.floor(s / 6);
+  const enemySpeed = (s: number) => 0.4 + s * 0.08;
+  const shootingStage = (s: number) => s >= 6;
+
+  const spawnWave = (s: number) => {
+    state.current.waveLeft = waveSize(s);
+    state.current.spawnTimer = 20;
+    state.current.weapon = Math.min(4, 1 + Math.floor((s - 1) / 5));
   };
-  const onMove = (ev: React.PointerEvent) => {
-    if (!drag.current) return; const r = wrapRef.current!.getBoundingClientRect();
-    const x = ((ev.clientX - r.left - drag.current.dx) / r.width) * 100;
-    const y = ((ev.clientY - r.top - drag.current.dy) / r.height) * 100;
-    setItems((arr) => arr.map((t) => t.id === drag.current!.id ? { ...t, x: Math.max(0, Math.min(94, x)), y: Math.max(0, Math.min(92, y)) } : t));
+
+  const resetAll = () => {
+    stageRef.current = 1; scoreRef.current = 0; livesRef.current = 3;
+    overRef.current = false; wonRef.current = false;
+    setStage(1); setScore(0); setLives(3); setOver(false); setWon(false);
+    state.current.bullets = []; state.current.enemies = []; state.current.pickups = []; state.current.fx = [];
+    state.current.ship.x = GS_W / 2; state.current.ship.y = GS_H - 56;
+    state.current.shield = 0; state.current.stun = 0; state.current.beam = 0;
+    startedRef.current = false;
+    setStageMsg("Stage 1 — tap or press Space to start");
+    spawnWave(1);
   };
-  const onUp = () => { drag.current = null; };
-  const rm = ROOMS[room];
-  const ghosts = sugg >= 0 ? ARRANGE[room][sugg] : [];
-  const bg = `linear-gradient(to bottom, ${rm.wall} 0%, ${rm.wall} 56%, ${rm.seam} 56%, ${rm.seam} 57.6%, ${rm.floor} 57.6%, ${rm.floor} 100%)`;
+
+  const nextStage = () => {
+    const next = stageRef.current + 1;
+    if (next > 20) {
+      wonRef.current = true; setWon(true);
+      setStageMsg("🎉 All 20 stages cleared!");
+      return;
+    }
+    stageRef.current = next; setStage(next);
+    state.current.pickups = []; state.current.bullets = [];
+    state.current.shield = Math.max(state.current.shield, 180); // brief grace
+    setStageMsg(`Stage ${next} — your ship upgraded!`);
+    spawnWave(next);
+  };
+
+  const fire = () => {
+    const st = state.current; if (st.fireCool > 0) return;
+    const sh = st.ship; const y = sh.y - 14;
+    const push = (vx: number, vy: number) => st.bullets.push({ x: sh.x + vx * 2, y, vx, vy, r: 4, from: "me", power: tier(stageRef.current) });
+    const w = st.weapon;
+    if (st.beam > 0) {
+      // beam is handled in the frame draw/damage pass; still fire a small lead bullet for impact
+      push(0, -9);
+    } else if (w === 1) push(0, -9);
+    else if (w === 2) { push(-2, -9); push(2, -9); }
+    else if (w === 3) { push(-3, -8.5); push(0, -9.5); push(3, -8.5); }
+    else { push(-3, -8.5); push(0, -9.5); push(3, -8.5); push(-6, -7); push(6, -7); }
+    sfx.select?.();
+    st.fireCool = w >= 4 ? 7 : 10;
+  };
+
+  const spawnEnemy = (s: number) => {
+    const kind = Math.floor(Math.random() * ENEMY_COLORS.length);
+    const r = 14 + Math.floor(Math.random() * 10);
+    const x = r + Math.random() * (GS_W - 2 * r);
+    const vx = (Math.random() - 0.5) * enemySpeed(s);
+    const vy = enemySpeed(s) * (0.6 + Math.random() * 0.6);
+    state.current.enemies.push({ x, y: -r, vx, vy, hp: enemyHp(s), r, shootT: 40 + Math.random() * 80, kind });
+  };
+
+  const maybeDropPickup = (x: number, y: number) => {
+    if (Math.random() > 0.14) return;
+    const kinds: GSPickup["kind"][] = ["bomb", "gun", "stun", "shield", "beam"];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    state.current.pickups.push({ x, y, vy: 1.6, kind });
+  };
+
+  const applyPickup = (kind: GSPickup["kind"]) => {
+    const st = state.current;
+    if (kind === "bomb") {
+      st.enemies.forEach((e) => st.fx.push({ x: e.x, y: e.y, t: 0, r: e.r, kind: "boom" }));
+      scoreRef.current += st.enemies.length * 20;
+      st.enemies = [];
+      sfx.good?.();
+    } else if (kind === "gun") {
+      st.weapon = Math.min(4, st.weapon + 1);
+      sfx.good?.();
+    } else if (kind === "stun") {
+      st.stun = 240;
+      sfx.good?.();
+    } else if (kind === "shield") {
+      st.shield = Math.max(st.shield, 420);
+      sfx.good?.();
+    } else if (kind === "beam") {
+      st.beam = 300;
+      sfx.good?.();
+    }
+    setScore(scoreRef.current);
+  };
+
+  const hitShip = () => {
+    const st = state.current;
+    if (st.shield > 0) { st.shield = 0; st.fx.push({ x: st.ship.x, y: st.ship.y, t: 0, r: 48, kind: "ring" }); return; }
+    livesRef.current -= 1; setLives(livesRef.current);
+    st.fx.push({ x: st.ship.x, y: st.ship.y, t: 0, r: 44, kind: "boom" });
+    st.shield = 120; // brief invuln after a hit
+    if (livesRef.current <= 0) { overRef.current = true; setOver(true); setStageMsg("Oh no — the ship is lost. Click Restart to try again."); }
+  };
+
+  useEffect(() => {
+    spawnWave(1);
+    const cv = ref.current!;
+    const draw = () => {
+      const ctx = cv.getContext("2d")!;
+      // Starfield background
+      ctx.fillStyle = "#0a0a1f"; ctx.fillRect(0, 0, GS_W, GS_H);
+      ctx.fillStyle = "#ffffff22";
+      for (let i = 0; i < 60; i++) {
+        const x = (i * 173 + (performance.now() * 0.03 * (1 + (i % 3))) % GS_W) % GS_W;
+        const y = (i * 97 + (performance.now() * 0.06 * (1 + (i % 5))) % GS_H) % GS_H;
+        ctx.fillRect(x, y, 2, 2);
+      }
+      const st = state.current;
+      // Beam weapon ribbon
+      if (st.beam > 0) {
+        const g = ctx.createLinearGradient(0, 0, 0, GS_H);
+        g.addColorStop(0, "#fff8"); g.addColorStop(1, "#5AA7E644");
+        ctx.fillStyle = g;
+        ctx.fillRect(st.ship.x - 6, 0, 12, st.ship.y - 12);
+      }
+      // Enemies
+      st.enemies.forEach((e) => {
+        ctx.fillStyle = ENEMY_COLORS[e.kind];
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#0a0a1f"; ctx.beginPath(); ctx.arc(e.x - e.r / 3, e.y - e.r / 4, 2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(e.x + e.r / 3, e.y - e.r / 4, 2, 0, Math.PI * 2); ctx.fill();
+      });
+      // Bullets
+      st.bullets.forEach((b) => {
+        ctx.fillStyle = b.from === "me" ? "#FFC94D" : "#FF7AA8";
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      });
+      // Pickups
+      st.pickups.forEach((p) => {
+        const emoji = p.kind === "bomb" ? "💣" : p.kind === "gun" ? "🔫" : p.kind === "stun" ? "🌀" : p.kind === "shield" ? "🛡️" : "⚡";
+        ctx.font = "24px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(emoji, p.x, p.y);
+      });
+      // Ship (visual tier based on stage)
+      const t = tier(stageRef.current);
+      const sh = st.ship;
+      const scale = 1 + (t - 1) * 0.2;
+      const w = sh.w * scale, h = sh.h * scale;
+      ctx.fillStyle = SHIP_COLORS[t - 1];
+      ctx.beginPath();
+      ctx.moveTo(sh.x, sh.y - h / 2);
+      ctx.lineTo(sh.x + w / 2, sh.y + h / 2);
+      ctx.lineTo(sh.x - w / 2, sh.y + h / 2);
+      ctx.closePath(); ctx.fill();
+      // Cockpit
+      ctx.fillStyle = "#ffffffcc";
+      ctx.beginPath(); ctx.arc(sh.x, sh.y - h / 6, 4, 0, Math.PI * 2); ctx.fill();
+      // Side pods for higher tiers
+      if (t >= 2) {
+        ctx.fillStyle = SHIP_COLORS[t - 1];
+        ctx.fillRect(sh.x - w / 2 - 4, sh.y, 4, h / 2);
+        ctx.fillRect(sh.x + w / 2, sh.y, 4, h / 2);
+      }
+      // Shield ring
+      if (st.shield > 0) {
+        ctx.strokeStyle = `rgba(90,167,230,${0.3 + 0.5 * Math.sin(performance.now() / 60)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sh.x, sh.y, 32, 0, Math.PI * 2); ctx.stroke();
+      }
+      // FX
+      st.fx.forEach((f) => {
+        if (f.kind === "boom") {
+          ctx.fillStyle = `rgba(255,201,77,${1 - f.t / 20})`;
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.r + f.t * 2, 0, Math.PI * 2); ctx.fill();
+        } else if (f.kind === "ring") {
+          ctx.strokeStyle = `rgba(90,167,230,${1 - f.t / 30})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(f.x, f.y, 20 + f.t * 2, 0, Math.PI * 2); ctx.stroke();
+        }
+      });
+      // HUD
+      ctx.fillStyle = "#fff"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText(`Stage ${stageRef.current}/20`, 10, 8);
+      ctx.fillText(`Score ${scoreRef.current}`, 10, 28);
+      ctx.textAlign = "right";
+      ctx.fillText(`Lives ${"❤️".repeat(livesRef.current)}`, GS_W - 10, 8);
+      const w2 = st.weapon;
+      ctx.fillText(`Weapon ${"⬢".repeat(w2)}`, GS_W - 10, 28);
+      if (st.shield > 0) ctx.fillText(`🛡️ ${Math.ceil(st.shield / 60)}s`, GS_W - 10, 48);
+      if (st.stun > 0) ctx.fillText(`🌀 ${Math.ceil(st.stun / 60)}s`, GS_W - 10, 68);
+      if (st.beam > 0) ctx.fillText(`⚡ ${Math.ceil(st.beam / 60)}s`, GS_W - 10, 88);
+    };
+    const update = () => {
+      const st = state.current;
+      if (overRef.current || wonRef.current || pausedRef.current || !startedRef.current) { draw(); return; }
+      // Ship movement
+      let dx = 0;
+      if (st.keys["ArrowLeft"] || st.keys["a"] || st.keys["A"]) dx -= 7;
+      if (st.keys["ArrowRight"] || st.keys["d"] || st.keys["D"]) dx += 7;
+      if (st.mouseX != null) {
+        const target = st.mouseX;
+        const diff = target - st.ship.x;
+        st.ship.x += Math.max(-9, Math.min(9, diff));
+      } else {
+        st.ship.x = Math.max(24, Math.min(GS_W - 24, st.ship.x + dx));
+      }
+      // Firing
+      if (st.fireCool > 0) st.fireCool--;
+      if (st.keys[" "] || st.mouseDown) fire();
+      // Spawning
+      st.spawnTimer--;
+      if (st.spawnTimer <= 0 && st.waveLeft > 0) {
+        spawnEnemy(stageRef.current); st.waveLeft--;
+        st.spawnTimer = Math.max(14, 40 - stageRef.current);
+      }
+      // Enemies
+      const enemySpeedMul = st.stun > 0 ? 0.1 : 1;
+      st.enemies.forEach((e) => {
+        e.x += e.vx * enemySpeedMul; e.y += e.vy * enemySpeedMul;
+        if (e.x < e.r || e.x > GS_W - e.r) e.vx *= -1;
+        // Enemy fire
+        if (shootingStage(stageRef.current) && st.stun === 0) {
+          e.shootT--;
+          if (e.shootT <= 0) {
+            e.shootT = 90 + Math.random() * 150;
+            const dxx = st.ship.x - e.x, dyy = st.ship.y - e.y;
+            const d = Math.hypot(dxx, dyy) || 1;
+            st.bullets.push({ x: e.x, y: e.y + e.r, vx: (dxx / d) * 3, vy: (dyy / d) * 3, r: 4, from: "foe" });
+          }
+        }
+      });
+      // Bullets
+      st.bullets = st.bullets.filter((b) => {
+        b.x += b.vx; b.y += b.vy;
+        if (b.y < -10 || b.y > GS_H + 10 || b.x < -10 || b.x > GS_W + 10) return false;
+        if (b.from === "me") {
+          for (let i = 0; i < st.enemies.length; i++) {
+            const e = st.enemies[i];
+            if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + b.r) {
+              e.hp -= (b.power || 1);
+              if (e.hp <= 0) {
+                scoreRef.current += 10 * stageRef.current;
+                st.fx.push({ x: e.x, y: e.y, t: 0, r: e.r, kind: "boom" });
+                maybeDropPickup(e.x, e.y);
+                st.enemies.splice(i, 1);
+              }
+              return false;
+            }
+          }
+        } else {
+          const sh = st.ship;
+          if (Math.abs(sh.x - b.x) < 18 && Math.abs(sh.y - b.y) < 14) {
+            hitShip();
+            return false;
+          }
+        }
+        return true;
+      });
+      // Beam damages top enemy directly above ship each tick
+      if (st.beam > 0) {
+        st.beam--;
+        st.enemies.forEach((e) => {
+          if (Math.abs(e.x - st.ship.x) < 10) e.hp -= 0.15;
+        });
+        st.enemies = st.enemies.filter((e) => {
+          if (e.hp <= 0) {
+            scoreRef.current += 10 * stageRef.current;
+            st.fx.push({ x: e.x, y: e.y, t: 0, r: e.r, kind: "boom" });
+            maybeDropPickup(e.x, e.y);
+            return false;
+          }
+          return true;
+        });
+      }
+      // Pickups
+      st.pickups = st.pickups.filter((p) => {
+        p.y += p.vy;
+        if (p.y > GS_H + 20) return false;
+        if (Math.abs(p.x - st.ship.x) < 22 && Math.abs(p.y - st.ship.y) < 22) {
+          applyPickup(p.kind);
+          return false;
+        }
+        return true;
+      });
+      // Enemy / ship collision
+      for (const e of st.enemies) {
+        if (Math.hypot(e.x - st.ship.x, e.y - st.ship.y) < e.r + 18) {
+          hitShip();
+          st.enemies = st.enemies.filter((x) => x !== e);
+          break;
+        }
+      }
+      // Timers
+      if (st.shield > 0) st.shield--;
+      if (st.stun > 0) st.stun--;
+      // FX decay
+      st.fx = st.fx.filter((f) => { f.t++; return f.t < (f.kind === "ring" ? 30 : 20); });
+      // Wave clear check
+      if (st.waveLeft === 0 && st.enemies.length === 0) {
+        startedRef.current = false;  // pause briefly between stages
+        setTimeout(() => { nextStage(); startedRef.current = !overRef.current && !wonRef.current; }, 400);
+      }
+      setScore(scoreRef.current);
+      draw();
+    };
+    let raf = 0;
+    const loop = () => { update(); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    const onKey = (e: KeyboardEvent) => {
+      state.current.keys[e.key] = true;
+      if (e.key === " ") { e.preventDefault(); if (!startedRef.current) { startedRef.current = true; setStageMsg(""); } }
+      if (e.key === "p" || e.key === "P") { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); }
+    };
+    const onKeyUp = (e: KeyboardEvent) => { state.current.keys[e.key] = false; };
+    window.addEventListener("keydown", onKey, { passive: false });
+    window.addEventListener("keyup", onKeyUp);
+    const onMove = (e: PointerEvent) => {
+      const r = cv.getBoundingClientRect();
+      state.current.mouseX = ((e.clientX - r.left) * (GS_W / r.width));
+    };
+    const onDown = () => { state.current.mouseDown = true; if (!startedRef.current && !overRef.current && !wonRef.current) { startedRef.current = true; setStageMsg(""); } };
+    const onUp = () => { state.current.mouseDown = false; };
+    const onLeave = () => { state.current.mouseX = null; state.current.mouseDown = false; };
+    cv.addEventListener("pointermove", onMove);
+    cv.addEventListener("pointerdown", onDown);
+    cv.addEventListener("pointerup", onUp);
+    cv.addEventListener("pointerleave", onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      cv.removeEventListener("pointermove", onMove);
+      cv.removeEventListener("pointerdown", onDown);
+      cv.removeEventListener("pointerup", onUp);
+      cv.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
+
   return (
-    <div className="house">
-      <div className="house-toolbar">
-        <div className="seg house-rooms">
-          {Object.entries(ROOMS).map(([k, r]) => <button key={k} className={room === k ? "on" : ""} onClick={() => { setRoom(k); setSugg(-1); }}>{r.label}</button>)}
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setSugg((s) => (s >= 4 ? -1 : s + 1))}>
-          {sugg < 0 ? "💡 Suggest" : `Idea ${sugg + 1}/5`}
-        </button>
+    <div>
+      <div className="paint-bar">
+        <b>Galaxy Shooter</b>
+        <span className="muted">Stage {stage}/20 · Score {score} · Lives {lives}</span>
+        <span className="paint-sep" />
+        <button className="btn btn-ghost btn-sm" onClick={() => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); }}>{paused ? "▶ Resume" : "⏸ Pause"}</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => resetAll()}>↻ Restart</button>
+        <span className="muted">← → or mouse to move · Space / click to shoot</span>
       </div>
-      <div ref={wrapRef} className="house-scene" style={{ background: bg }} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
-        {ghosts.map((g, i) => (
-          <span key={"g" + i} className="house-ghost" style={{ left: `${g.x}%`, top: `${g.y}%` }}>{g.e}</span>
-        ))}
-        {items.map((it) => (
-          <span key={it.id} className="house-item" style={{ left: `${it.x}%`, top: `${it.y}%` }}
-            onPointerDown={(ev) => onDown(ev, it.id)} onDoubleClick={() => setItems((a) => a.filter((t) => t.id !== it.id))}>{it.e}</span>
-        ))}
-        {items.length === 0 && sugg < 0 && <span className="house-hint">Tap 💡 Suggest for arrangement ideas, then tap items below to add — drag to place, double-tap to remove.</span>}
+      <div style={{ position: "relative", background: "#0a0a1f", borderRadius: 14, overflow: "hidden", margin: "0 auto", maxWidth: GS_W }}>
+        <canvas ref={ref} width={GS_W} height={GS_H} style={{ display: "block", width: "100%", height: "auto", touchAction: "none", cursor: "crosshair" }} />
+        {(stageMsg || over || won) && (
+          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#fff", fontFamily: "Fredoka", textAlign: "center", padding: 20, pointerEvents: "none" }}>
+            <div style={{ background: "rgba(10,10,31,.72)", padding: "16px 22px", borderRadius: 16, maxWidth: "80%" }}>
+              <b style={{ fontSize: "1.4rem" }}>{over ? "💥 Game Over" : won ? "🎉 You cleared the galaxy!" : stageMsg}</b>
+              {(over || won) && <div style={{ marginTop: 8, fontSize: ".95rem" }}>Final score: {score}</div>}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="house-palette">
-        {HOUSE_ITEMS.map(([group, list]) => (
-          <div key={group} className="house-group"><span className="dress-lbl">{group}</span><div className="pills">{list.map((ej) => <button key={ej} className="tool-btn" onClick={() => add(ej)}>{ej}</button>)}</div></div>
-        ))}
-        <div className="cta-wrap"><button className="btn btn-ghost btn-sm" onClick={() => setItems([])}>🗑️ Clear room</button></div>
+    </div>
+  );
+}
+
+// ---------- Coin Run ----------
+// Side-scrolling runner, 20 stages that cycle through 7 sceneries. Space to
+// jump, Down to crouch, pickups speed you up, pull coins to you, let you fly
+// over obstacles. Character pickable before start (boy/girl/dog/cat/bunny).
+const CR_W = 960, CR_H = 420, CR_GROUND = 320;
+const CR_CHARS: [string, string][] = [["boy", "🧒"], ["girl", "👧"], ["dog", "🐶"], ["cat", "🐱"], ["bunny", "🐰"]];
+const CR_SCENES: { name: string; sky: [string, string]; ground: string; hill?: string; items: string[]; obstacles: string[] }[] = [
+  { name: "Forest", sky: ["#A8E6CF", "#DCEDC1"], ground: "#5BBF8A", hill: "#2EC4B6", items: ["🌳", "🌲", "🍄"], obstacles: ["🌵", "🪨"] },
+  { name: "Desert", sky: ["#FFD3A5", "#FD6585"], ground: "#E9A044", hill: "#B07324", items: ["🌵", "🏜️"], obstacles: ["🪨", "🦂"] },
+  { name: "Mountain", sky: ["#B6CDFF", "#D1E0FF"], ground: "#8A6BA1", hill: "#5B4870", items: ["⛰️", "🌲"], obstacles: ["🪨", "⛰️"] },
+  { name: "City", sky: ["#FFC48C", "#FF9A8B"], ground: "#555", hill: "#7A6D5C", items: ["🏢", "🏙️"], obstacles: ["🚗", "🪧"] },
+  { name: "Icy", sky: ["#B4E0FF", "#E0F3FF"], ground: "#D7ECFF", hill: "#9DC9EE", items: ["⛄", "🌲"], obstacles: ["🧊", "🪨"] },
+  { name: "Space", sky: ["#0a0a1f", "#1a1a4f"], ground: "#2a2a5f", hill: "#444477", items: ["🪐", "🛸", "⭐"], obstacles: ["☄️", "🛰️"] },
+  { name: "Underwater", sky: ["#5AA7E6", "#A2D9FF"], ground: "#C5B49A", hill: "#8B7D5F", items: ["🐠", "🐟", "🪸"], obstacles: ["🦈", "🐙"] },
+];
+
+interface CRThing { x: number; y: number; emoji: string; r: number; kind: "coin" | "obstacle" | "pickup"; power?: "speed" | "magnet" | "rocket" | "shield"; }
+
+function CoinRun() {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const [charIdx, setCharIdx] = useState(0);
+  const [stage, setStage] = useState(1);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [over, setOver] = useState(false);
+  const [won, setWon] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [stageMsg, setStageMsg] = useState("Pick your character and press Space to start");
+  const [started, setStarted] = useState(false);
+  const stageRef = useRef(1);
+  const scoreRef = useRef(0);
+  const livesRef = useRef(3);
+  const overRef = useRef(false);
+  const wonRef = useRef(false);
+  const pausedRef = useRef(false);
+  const startedRef = useRef(false);
+  const charRef = useRef(0);
+  const state = useRef({
+    player: { x: 100, y: CR_GROUND, vy: 0, onGround: true, w: 36, h: 36 },
+    things: [] as CRThing[],
+    scrollX: 0,
+    scrollSpeed: 4,
+    stageTarget: 300,   // coins needed? no — distance scrolled to clear stage
+    stageProgress: 0,
+    nextSpawn: 60,
+    speed: 0,            // frames of speed boost
+    magnet: 0,
+    rocket: 0,
+    shield: 0,
+    keys: {} as Record<string, boolean>,
+  });
+
+  const sceneFor = (s: number) => CR_SCENES[(s - 1) % CR_SCENES.length];
+  const stageTargetFor = (s: number) => 1800 + s * 300;
+
+  const resetAll = () => {
+    stageRef.current = 1; scoreRef.current = 0; livesRef.current = 3;
+    overRef.current = false; wonRef.current = false; startedRef.current = false;
+    setStage(1); setScore(0); setLives(3); setOver(false); setWon(false); setStarted(false);
+    state.current.player.x = 100; state.current.player.y = CR_GROUND; state.current.player.vy = 0; state.current.player.onGround = true;
+    state.current.things = [];
+    state.current.scrollX = 0;
+    state.current.stageProgress = 0;
+    state.current.stageTarget = stageTargetFor(1);
+    state.current.speed = 0; state.current.magnet = 0; state.current.rocket = 0; state.current.shield = 0;
+    setStageMsg("Pick your character and press Space to start");
+  };
+
+  const nextStage = () => {
+    const n = stageRef.current + 1;
+    if (n > 20) {
+      wonRef.current = true; setWon(true);
+      setStageMsg("🏆 All 20 stages cleared!");
+      return;
+    }
+    stageRef.current = n; setStage(n);
+    const scene = sceneFor(n);
+    state.current.stageProgress = 0;
+    state.current.stageTarget = stageTargetFor(n);
+    state.current.things = [];
+    state.current.shield = Math.max(state.current.shield, 180);
+    setStageMsg(`Stage ${n} — ${scene.name}!`);
+    setTimeout(() => setStageMsg(""), 1600);
+  };
+
+  const spawnThing = () => {
+    const st = state.current;
+    const scene = sceneFor(stageRef.current);
+    const roll = Math.random();
+    const x = CR_W + 20;
+    if (roll < 0.6) {
+      // Coins (sometimes in arcs)
+      const n = 1 + Math.floor(Math.random() * 4);
+      const baseY = CR_GROUND - 20 - Math.random() * 120;
+      for (let i = 0; i < n; i++) {
+        st.things.push({ x: x + i * 28, y: baseY + Math.sin(i * 0.7) * 10, emoji: "🪙", r: 12, kind: "coin" });
+      }
+    } else if (roll < 0.85) {
+      const emoji = scene.obstacles[Math.floor(Math.random() * scene.obstacles.length)];
+      st.things.push({ x, y: CR_GROUND, emoji, r: 20, kind: "obstacle" });
+    } else {
+      const powers: CRThing["power"][] = ["speed", "magnet", "rocket", "shield"];
+      const power = powers[Math.floor(Math.random() * powers.length)];
+      const emoji = power === "speed" ? "👟" : power === "magnet" ? "🧲" : power === "rocket" ? "🚀" : "🛡️";
+      st.things.push({ x, y: CR_GROUND - 60 - Math.random() * 80, emoji, r: 18, kind: "pickup", power });
+    }
+    st.nextSpawn = 30 + Math.floor(Math.random() * 40);
+  };
+
+  const hit = () => {
+    const st = state.current;
+    if (st.shield > 0) { st.shield = 0; return; }
+    livesRef.current -= 1; setLives(livesRef.current);
+    st.shield = 90;
+    if (livesRef.current <= 0) {
+      overRef.current = true; setOver(true);
+      setStageMsg("Oh no — you lost all your lives. Click Restart to try again.");
+    }
+  };
+
+  useEffect(() => {
+    state.current.stageTarget = stageTargetFor(1);
+    const cv = ref.current!;
+    const draw = () => {
+      const ctx = cv.getContext("2d")!;
+      const scene = sceneFor(stageRef.current);
+      // Sky gradient
+      const g = ctx.createLinearGradient(0, 0, 0, CR_H);
+      g.addColorStop(0, scene.sky[0]); g.addColorStop(1, scene.sky[1]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, CR_W, CR_H);
+      // Hills / backdrop
+      if (scene.hill) {
+        ctx.fillStyle = scene.hill;
+        for (let i = 0; i < 3; i++) {
+          const hx = (i * 400 - (state.current.scrollX * 0.3) % 400 + 400) % 1200 - 200;
+          ctx.beginPath();
+          ctx.moveTo(hx, CR_GROUND);
+          ctx.quadraticCurveTo(hx + 200, 200, hx + 400, CR_GROUND);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+      // Decorative items (parallax)
+      ctx.font = "28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      scene.items.forEach((e, i) => {
+        for (let k = 0; k < 5; k++) {
+          const dx = (k * 240 + i * 80 - (state.current.scrollX * 0.5) % 240 + 1200) % 1200 - 200;
+          ctx.fillText(e, dx, CR_GROUND - 2);
+        }
+      });
+      // Ground
+      ctx.fillStyle = scene.ground;
+      ctx.fillRect(0, CR_GROUND, CR_W, CR_H - CR_GROUND);
+      // Things
+      const st = state.current;
+      st.things.forEach((t) => {
+        ctx.font = `${t.r * 1.8}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(t.emoji, t.x, t.y);
+      });
+      // Player
+      const p = st.player;
+      ctx.font = "40px serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      ctx.fillText(CR_CHARS[charRef.current][1], p.x, p.y);
+      if (st.shield > 0) {
+        ctx.strokeStyle = `rgba(90,167,230,${0.4 + 0.4 * Math.sin(performance.now() / 50)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(p.x, p.y - 20, 30, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (st.rocket > 0) {
+        ctx.fillStyle = "#FFC94D";
+        ctx.beginPath(); ctx.arc(p.x - 15, p.y - 10, 6 + Math.random() * 4, 0, Math.PI * 2); ctx.fill();
+      }
+      // HUD
+      ctx.fillStyle = "#0b1226"; ctx.font = "bold 15px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText(`Stage ${stageRef.current}/20 · ${scene.name}`, 10, 8);
+      ctx.fillText(`Coins ${scoreRef.current}`, 10, 28);
+      ctx.textAlign = "right";
+      ctx.fillText(`Lives ${"❤️".repeat(livesRef.current)}`, CR_W - 10, 8);
+      let hy = 28;
+      if (st.speed > 0) { ctx.fillText(`👟 ${Math.ceil(st.speed / 60)}s`, CR_W - 10, hy); hy += 20; }
+      if (st.magnet > 0) { ctx.fillText(`🧲 ${Math.ceil(st.magnet / 60)}s`, CR_W - 10, hy); hy += 20; }
+      if (st.rocket > 0) { ctx.fillText(`🚀 ${Math.ceil(st.rocket / 60)}s`, CR_W - 10, hy); hy += 20; }
+      if (st.shield > 0) { ctx.fillText(`🛡️ ${Math.ceil(st.shield / 60)}s`, CR_W - 10, hy); hy += 20; }
+      // Progress bar
+      ctx.fillStyle = "#00000033"; ctx.fillRect(10, CR_H - 14, CR_W - 20, 6);
+      ctx.fillStyle = "#5BBF8A"; ctx.fillRect(10, CR_H - 14, (CR_W - 20) * Math.min(1, st.stageProgress / st.stageTarget), 6);
+    };
+    const update = () => {
+      const st = state.current;
+      if (overRef.current || wonRef.current || pausedRef.current || !startedRef.current) { draw(); return; }
+      const baseSpeed = st.scrollSpeed + Math.min(4, stageRef.current * 0.15);
+      const speed = baseSpeed * (st.speed > 0 ? 1.6 : 1);
+      st.scrollX += speed; st.stageProgress += speed;
+      // Gravity / jumping / rocket
+      const p = st.player;
+      if (st.rocket > 0) {
+        // Up / down with arrows while rocket active
+        if (st.keys["ArrowUp"] || st.keys["w"] || st.keys["W"]) p.y -= 6;
+        if (st.keys["ArrowDown"] || st.keys["s"] || st.keys["S"]) p.y += 6;
+        p.y = Math.max(60, Math.min(CR_GROUND, p.y));
+        p.vy = 0; p.onGround = false;
+      } else {
+        p.vy += 0.9;
+        p.y += p.vy;
+        if (p.y >= CR_GROUND) { p.y = CR_GROUND; p.vy = 0; p.onGround = true; }
+      }
+      // Spawn things
+      st.nextSpawn--;
+      if (st.nextSpawn <= 0) spawnThing();
+      // Move things
+      st.things = st.things.filter((t) => {
+        t.x -= speed;
+        if (st.magnet > 0 && t.kind === "coin") {
+          const dxx = p.x - t.x, dyy = (p.y - 20) - t.y;
+          const d = Math.hypot(dxx, dyy);
+          if (d < 180) { t.x += (dxx / d) * 6; t.y += (dyy / d) * 6; }
+        }
+        if (t.x < -40) return false;
+        // Collide with player
+        const dxx = Math.abs(t.x - p.x), dyy = Math.abs(t.y - (p.y - 20));
+        if (dxx < t.r + 18 && dyy < t.r + 18) {
+          if (t.kind === "coin") { scoreRef.current += 1; setScore(scoreRef.current); return false; }
+          if (t.kind === "obstacle") { hit(); return false; }
+          if (t.kind === "pickup") {
+            if (t.power === "speed") st.speed = 360;
+            else if (t.power === "magnet") st.magnet = 420;
+            else if (t.power === "rocket") st.rocket = 300;
+            else if (t.power === "shield") st.shield = 420;
+            return false;
+          }
+        }
+        return true;
+      });
+      // Timers
+      if (st.speed > 0) st.speed--;
+      if (st.magnet > 0) st.magnet--;
+      if (st.rocket > 0) st.rocket--;
+      if (st.shield > 0) st.shield--;
+      // Stage complete
+      if (st.stageProgress >= st.stageTarget) {
+        startedRef.current = false;
+        setTimeout(() => { nextStage(); startedRef.current = !overRef.current && !wonRef.current; }, 600);
+      }
+      draw();
+    };
+    let raf = 0;
+    const loop = () => { update(); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    const onKey = (e: KeyboardEvent) => {
+      state.current.keys[e.key] = true;
+      if (e.key === " ") {
+        e.preventDefault();
+        if (!startedRef.current && !overRef.current && !wonRef.current) {
+          startedRef.current = true; setStarted(true); setStageMsg("");
+          return;
+        }
+        const p = state.current.player;
+        if (p.onGround && state.current.rocket === 0) { p.vy = -16; p.onGround = false; }
+      }
+      if (e.key === "p" || e.key === "P") { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); }
+    };
+    const onKeyUp = (e: KeyboardEvent) => { state.current.keys[e.key] = false; };
+    window.addEventListener("keydown", onKey, { passive: false });
+    window.addEventListener("keyup", onKeyUp);
+    const onTap = () => {
+      if (!startedRef.current && !overRef.current && !wonRef.current) {
+        startedRef.current = true; setStarted(true); setStageMsg(""); return;
+      }
+      const p = state.current.player;
+      if (p.onGround && state.current.rocket === 0) { p.vy = -16; p.onGround = false; }
+    };
+    cv.addEventListener("pointerdown", onTap);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      cv.removeEventListener("pointerdown", onTap);
+    };
+  }, []);
+
+  const pickChar = (i: number) => { charRef.current = i; setCharIdx(i); };
+
+  return (
+    <div>
+      <div className="paint-bar">
+        <b>Coin Run</b>
+        <span className="muted">Stage {stage}/20 · Coins {score} · Lives {lives}</span>
+        <span className="paint-sep" />
+        {!started && (
+          <>
+            <span className="muted">Pick your runner:</span>
+            {CR_CHARS.map(([n, e], i) => (
+              <button key={n} className={"tool-btn" + (charIdx === i ? " on" : "")} title={n} onClick={() => pickChar(i)}>{e}</button>
+            ))}
+          </>
+        )}
+        <span className="paint-sep" />
+        <button className="btn btn-ghost btn-sm" onClick={() => { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); }}>{paused ? "▶ Resume" : "⏸ Pause"}</button>
+        <button className="btn btn-ghost btn-sm" onClick={resetAll}>↻ Restart</button>
+        <span className="muted">Space / tap to jump</span>
+      </div>
+      <div style={{ position: "relative", background: "#A8E6CF", borderRadius: 14, overflow: "hidden", margin: "0 auto", maxWidth: CR_W }}>
+        <canvas ref={ref} width={CR_W} height={CR_H} style={{ display: "block", width: "100%", height: "auto", touchAction: "none", cursor: "pointer" }} />
+        {(stageMsg || over || won) && (
+          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#0b1226", fontFamily: "Fredoka", textAlign: "center", padding: 20, pointerEvents: "none" }}>
+            <div style={{ background: "rgba(255,255,255,.82)", padding: "16px 22px", borderRadius: 16, maxWidth: "80%" }}>
+              <b style={{ fontSize: "1.4rem" }}>{over ? "💥 Game Over" : won ? "🏆 You win!" : stageMsg}</b>
+              {(over || won) && <div style={{ marginTop: 8, fontSize: ".95rem" }}>Final coins: {score}</div>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 
+
 function ActivityModal({ tool, onClose }: { tool: CanvasTool; onClose: () => void }) {
   const t = tool.title.toLowerCase();
-  const isGame = /match|bubble|pop|shooter|ricochet|deflect|search|find|tetris|block|scramble|word|trivia|quiz|puzzle/.test(t);
-  // Painting and colouring need the whole viewport — the fixed 820px sheet
-  // left the canvas less than half the screen.
-  const needsFullScreen = /paint|colour|color/.test(t);
+  const isGame = /match|bubble|pop|shooter|ricochet|deflect|search|find|tetris|block|scramble|word|trivia|quiz|puzzle|galaxy|coin.?run/.test(t);
+  // Painting, colouring and the big action games benefit from the whole
+  // viewport — the fixed 820px sheet left them less than half the screen.
+  const needsFullScreen = /paint|colour|color|galaxy|coin.?run/.test(t);
   const [muted, setMuted] = useState(isMuted());
   useEffect(() => {
     if (isGame) startMusic();
@@ -2315,7 +2946,8 @@ function ActivityModal({ tool, onClose }: { tool: CanvasTool; onClose: () => voi
     : /story/.test(t) ? <StoryBuilder />
     : /colour|color/.test(t) ? <ColoringBook />
     : /dress/.test(t) ? <DressUp />
-    : /house|room/.test(t) ? <HouseBuilder />
+    : /galaxy/.test(t) ? <GalaxyShooter />
+    : /coin.?run/.test(t) ? <CoinRun />
     : /match/.test(t) ? <MatchGame />
     : /shooter/.test(t) ? <BubbleShooter />
     : /ricochet|deflect/.test(t) ? <Ricochet />
@@ -2353,10 +2985,11 @@ const GAMES: CanvasTool[] = [
   { name: "Speller", color: "#9B6DD6", icon: "🔤", title: "Word scramble", desc: "Match the picture, or hide it for a spelling challenge — 200+ words." },
   { name: "Quiz Whizz", color: "#FF7A66", icon: "❓", title: "Trivia quiz", desc: "Animals, science, world and numbers — beat your score." },
   { name: "Puzzler", color: "#2EC4B6", icon: "🧩", title: "Picture puzzle", desc: "Slide the tiles to fix the picture — animals, people, nature, transport." },
+  { name: "Starblade", color: "#5AA7E6", icon: "🚀", title: "Galaxy shooter", desc: "Pilot a starship across 20 stages — your ship upgrades each wave; grab bombs, bigger guns, stun, shields and beams." },
+  { name: "Dash", color: "#FFC94D", icon: "🪙", title: "Coin run", desc: "Pick a runner and dash through forests, deserts, cities, ice and space. Grab coins, dodge obstacles, magnets and rockets help." },
 ];
 const COLORING_TILE: CanvasTool = { name: "Picasso", color: "#9B6DD6", icon: "🖍️", title: "Colouring book", desc: "Colour clowns, unicorns, trains, houses and more — tap a tile to start." };
 const DRESSUP_TILE: CanvasTool = { name: "Coco", color: "#FF7AA8", icon: "👗", title: "Dress me up", desc: "Style a character — hair, outfits, colours, hats and more." };
-const HOUSE_TILE: CanvasTool = { name: "Bob", color: "#5BBF8A", icon: "🏠", title: "My house", desc: "Arrange a room with furniture, people, pets and things." };
 
 export default function Canvas() {
   const [tools, setTools] = useState<CanvasTools | null>(null);
@@ -2390,7 +3023,7 @@ export default function Canvas() {
       <PageHero kind="canvas" eyebrow="Make" title={<>A <em>canvas</em> for making things</>} tease="Projects, books, games and playful tools to create together — guided every step, with read-aloud help." />
       {section("Build for education", tools.education)}
       {section("Build for fun", tools.fun)}
-      {section("Play", [...tools.play, COLORING_TILE, DRESSUP_TILE, HOUSE_TILE])}
+      {section("Play", [...tools.play, COLORING_TILE, DRESSUP_TILE])}
       {section("Games", GAMES)}
       {active && <ActivityModal tool={active} onClose={() => setActive(null)} />}
     </div>

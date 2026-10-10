@@ -332,6 +332,11 @@ main.wrap{padding-bottom:110px}
 .cv-sheet--full > .paint,
 .cv-sheet--full > .img-color,
 .cv-sheet--full > .color-book{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* ColoringBook wraps ImageColor for uploaded sheets — the nested .img-color
+   also needs flex:1 min-height:0 so paint-wrap gets a real height and
+   useFitSize can measure it; otherwise the stage falls back to the canvas's
+   intrinsic 1200px and displays oversized. */
+.cv-sheet--full .color-book > .img-color{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .cv-sheet--full > .color-book--gallery{overflow:auto}  /* gallery view does scroll — many thumbnails */
 .cv-sheet--full .paint-bar{flex:0 0 auto}
 .cv-sheet--full .paint-ref,
