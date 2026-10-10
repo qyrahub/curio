@@ -127,6 +127,114 @@ const PAINT_COLORS = ["#FF7A66", "#F2563D", "#FFC94D", "#FFB703", "#5BBF8A", "#2
   "#4C7AE0", "#9B6DD6", "#C45CB0", "#FF7AA8", "#9C6B3F", "#2C2A4A", "#7A7A7A", "#FFFFFF", "#000000"];
 const STAMPS = ["⭐", "❤️", "🌸", "🐱", "🦋", "🌈", "☁️", "🐠", "🌟", "🍀"];
 
+// Shared Save / Print / fit helpers for the painting + colouring tools.
+// combineCanvases flattens the base+paint stack into one bitmap for export —
+// multiply blend matches what the parent sees on screen so lines stay dark.
+function combineCanvases(base: HTMLCanvasElement, paint: HTMLCanvasElement, blendMultiply: boolean): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = base.width; out.height = base.height;
+  const ctx = out.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(base, 0, 0);
+  if (blendMultiply) ctx.globalCompositeOperation = "multiply";
+  ctx.drawImage(paint, 0, 0);
+  ctx.globalCompositeOperation = "source-over";
+  return out;
+}
+
+function downloadCanvas(canvas: HTMLCanvasElement, name: string): void {
+  try {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}-${new Date().toISOString().slice(0, 10)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }, "image/png");
+  } catch { /* ignore */ }
+}
+
+function printCanvas(canvas: HTMLCanvasElement, title: string): void {
+  try {
+    const dataUrl = canvas.toDataURL("image/png");
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) { alert("Please allow pop-ups to print your picture."); return; }
+    w.document.open();
+    w.document.write(`<!doctype html><html><head><title>${title}</title>
+<style>@page{margin:1cm}html,body{margin:0;height:100%;background:#fff;font-family:system-ui,sans-serif}
+body{display:grid;place-items:center;padding:10px}
+img{max-width:100%;max-height:98vh;object-fit:contain;display:block}</style>
+</head><body><img src="${dataUrl}" alt="${title}"/>
+<script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},200);});window.onafterprint=function(){window.close();};</script>
+</body></html>`);
+    w.document.close();
+  } catch { alert("Couldn't open the print window."); }
+}
+
+// Rasterise an SVG element to a canvas so SVG colouring pages can be saved/printed.
+async function svgToCanvas(svg: SVGSVGElement, outWidth: number): Promise<HTMLCanvasElement> {
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  const vb = svg.viewBox.baseVal;
+  const vbW = vb && vb.width > 0 ? vb.width : (svg.clientWidth || outWidth);
+  const vbH = vb && vb.height > 0 ? vb.height : (svg.clientHeight || outWidth);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("width", String(vbW));
+  clone.setAttribute("height", String(vbH));
+  const serialized = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = (e) => reject(e);
+      im.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = outWidth;
+    canvas.height = Math.round(outWidth * (vbH / vbW));
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Measure available room inside a container and return the largest {w,h} that
+// fits while preserving aspect. Used for the paint stage so no scroll ever
+// appears regardless of the viewport size.
+function useFitSize(wrapRef: React.RefObject<HTMLDivElement | null>, aspectW: number, aspectH: number) {
+  const [sz, setSz] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  useEffect(() => {
+    const fit = () => {
+      const el = wrapRef.current; if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0 || !aspectW || !aspectH) return;
+      const aspect = aspectW / aspectH;
+      let w = r.width, h = w / aspect;
+      if (h > r.height) { h = r.height; w = h * aspect; }
+      setSz({ w: Math.max(120, Math.floor(w)), h: Math.max(80, Math.floor(h)) });
+    };
+    fit();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && wrapRef.current) {
+      ro = new ResizeObserver(fit);
+      ro.observe(wrapRef.current);
+    }
+    window.addEventListener("resize", fit);
+    return () => { ro?.disconnect(); window.removeEventListener("resize", fit); };
+  }, [wrapRef, aspectW, aspectH]);
+  return sz;
+}
+
 // PaintPad — rebuilt with a two-canvas stack so the loaded line-art is on a
 // separate layer below the paint. The top (paint) layer uses mix-blend-mode:
 // multiply when a base is loaded, which keeps dark lines dark no matter what
@@ -138,6 +246,8 @@ const PAINT_H = 900;
 function PaintPad() {
   const baseRef = useRef<HTMLCanvasElement | null>(null);  // bottom: line art / blank
   const ref = useRef<HTMLCanvasElement | null>(null);      // top: user strokes
+  const wrapRef = useRef<HTMLDivElement | null>(null);     // measured area for fit
+  const stageSize = useFitSize(wrapRef, PAINT_W, PAINT_H);
   const [color, setColor] = useState("#FF7A66");
   const [size, setSize] = useState(14);
   const [tool, setTool] = useState<"brush" | "marker" | "spray" | "eraser" | "stamp">("brush");
@@ -265,6 +375,14 @@ function PaintPad() {
     historyRef.current = [];
     setCanUndo(false);
   };
+  const savePainting = () => {
+    const b = baseRef.current, p = ref.current; if (!b || !p) return;
+    downloadCanvas(combineCanvases(b, p, hasBase), hasBase ? "curio-colouring" : "curio-painting");
+  };
+  const printPainting = () => {
+    const b = baseRef.current, p = ref.current; if (!b || !p) return;
+    printCanvas(combineCanvases(b, p, hasBase), "My painting");
+  };
 
   const TOOLS: [typeof tool, string, string][] = [
     ["brush", "🖌️", "Brush"], ["marker", "🖊️", "Marker"], ["spray", "💨", "Spray"],
@@ -297,6 +415,8 @@ function PaintPad() {
         <span className="paint-sep" />
         <button className="btn btn-ghost btn-sm" onClick={undo} disabled={!canUndo} title="Undo last stroke">↶ Undo</button>
         <button className="btn btn-ghost btn-sm" onClick={clearPaint}>🗑️ Clear paint</button>
+        <button className="paint-action" onClick={savePainting} title="Save as PNG">💾 Save</button>
+        <button className="paint-action" onClick={printPainting} title="Print this picture">🖨️ Print</button>
       </div>
       {tool === "stamp" && (
         <div className="paint-bar">
@@ -316,11 +436,13 @@ function PaintPad() {
           ))}
         </div>
       )}
-      <div className="paint-stage">
-        <canvas ref={baseRef} width={PAINT_W} height={PAINT_H} className="paint-base" />
-        <canvas ref={ref} width={PAINT_W} height={PAINT_H}
-          className={"paint-canvas" + (hasBase ? " paint-canvas--multiply" : "")}
-          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} />
+      <div className="paint-wrap" ref={wrapRef}>
+        <div className="paint-stage" style={{ width: stageSize.w || undefined, height: stageSize.h || undefined }}>
+          <canvas ref={baseRef} width={PAINT_W} height={PAINT_H} className="paint-base" />
+          <canvas ref={ref} width={PAINT_W} height={PAINT_H}
+            className={"paint-canvas" + (hasBase ? " paint-canvas--multiply" : "")}
+            onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} />
+        </div>
       </div>
     </div>
   );
@@ -1700,6 +1822,11 @@ const COL_PAGES = buildCollages();
 function ImageColor({ src }: { src: string }) {
   const baseRef = useRef<HTMLCanvasElement | null>(null);
   const ref = useRef<HTMLCanvasElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  // The uploaded image's intrinsic aspect — set when the image loads so the
+  // fit hook knows which shape to size the stage to.
+  const [aspect, setAspect] = useState<{ w: number; h: number }>({ w: 4, h: 3 });
+  const stageSize = useFitSize(wrapRef, aspect.w, aspect.h);
   const [ready, setReady] = useState(false);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
@@ -1730,6 +1857,7 @@ function ImageColor({ src }: { src: string }) {
       top.getContext("2d")!.clearRect(0, 0, W, H);
       historyRef.current = [];
       setCanUndo(false);
+      setAspect({ w: W, h: H });
       setReady(true);
     };
     img.src = src;
@@ -1792,8 +1920,16 @@ function ImageColor({ src }: { src: string }) {
     historyRef.current = [];
     setCanUndo(false);
   };
+  const savePainting = () => {
+    const b = baseRef.current, p = ref.current; if (!b || !p) return;
+    downloadCanvas(combineCanvases(b, p, true), "curio-colouring");
+  };
+  const printPainting = () => {
+    const b = baseRef.current, p = ref.current; if (!b || !p) return;
+    printCanvas(combineCanvases(b, p, true), "My colouring");
+  };
   return (
-    <div>
+    <div className="img-color">
       <div className="paint-bar">
         {COLOR_PALETTE.map((cc) => (
           <button key={cc}
@@ -1815,12 +1951,17 @@ function ImageColor({ src }: { src: string }) {
         <span className="paint-sep" />
         <button className="btn btn-ghost btn-sm" onClick={undo} disabled={!canUndo}>↶ Undo</button>
         <button className="btn btn-ghost btn-sm" onClick={clearPaint}>🗑️ Clear paint</button>
+        <button className="paint-action" onClick={savePainting} disabled={!ready} title="Save as PNG">💾 Save</button>
+        <button className="paint-action" onClick={printPainting} disabled={!ready} title="Print this picture">🖨️ Print</button>
       </div>
-      <div className="paint-stage paint-stage--fit">
-        <canvas ref={baseRef} className="paint-base" />
-        <canvas ref={ref} className="paint-canvas paint-canvas--multiply"
-          style={{ cursor: erase ? "cell" : "crosshair" }}
-          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up} />
+      <div className="paint-wrap" ref={wrapRef}>
+        <div className="paint-stage paint-stage--fit"
+          style={{ width: stageSize.w || undefined, height: stageSize.h || undefined }}>
+          <canvas ref={baseRef} className="paint-base" />
+          <canvas ref={ref} className="paint-canvas paint-canvas--multiply"
+            style={{ cursor: erase ? "cell" : "crosshair" }}
+            onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up} />
+        </div>
       </div>
     </div>
   );
@@ -1856,12 +1997,20 @@ function ColoringBook() {
   const [fills, setFills] = useState<Record<string, string>>({});
   const [uploads, setUploads] = useState<WorkbenchAsset[]>([]);
   const [upload, setUpload] = useState<WorkbenchAsset | null>(null);
+  // Wrap + stage for the SVG colouring sheet, measured so no scroll ever appears.
+  const svgWrapRef = useRef<HTMLDivElement | null>(null);
+  const svgHostRef = useRef<HTMLDivElement | null>(null);
+  const pageAspect = COL_PAGES[pic] || { cols: 2, rows: 2 };
+  const svgSize = useFitSize(svgWrapRef, pageAspect.cols, pageAspect.rows);
   useEffect(() => { api.workbenchAssets("coloring").then((r) => setUploads(r.assets)).catch(() => {}); }, []);
   const open = (i: number) => { setPic(i); setUpload(null); setFills({}); setView("page"); };
   const openUpload = (a: WorkbenchAsset) => { setUpload(a); setView("page"); };
   const CELL = 220;
   const renderCollage = (pg: ColPage, interactive: boolean) => (
-    <svg viewBox={`0 0 ${pg.cols * CELL} ${pg.rows * CELL}`} className={interactive ? "coloring-svg" : undefined}>
+    <svg viewBox={`0 0 ${pg.cols * CELL} ${pg.rows * CELL}`}
+      preserveAspectRatio="xMidYMid meet"
+      className={interactive ? "coloring-svg" : undefined}
+      style={interactive ? { width: "100%", height: "100%", maxWidth: "none" } : undefined}>
       {pg.cells.map((obj, ci) => {
         const col = ci % pg.cols, row = Math.floor(ci / pg.cols);
         const sc = (CELL - 16) / 240, dx = col * CELL + 8, dy = row * CELL + 8;
@@ -1876,9 +2025,25 @@ function ColoringBook() {
       })}
     </svg>
   );
+  const saveSvg = async () => {
+    const svg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    if (!svg) return;
+    try {
+      const canvas = await svgToCanvas(svg, 2000);
+      downloadCanvas(canvas, "curio-colouring");
+    } catch { alert("Couldn't save this picture."); }
+  };
+  const printSvg = async () => {
+    const svg = svgHostRef.current?.querySelector("svg") as SVGSVGElement | null;
+    if (!svg) return;
+    try {
+      const canvas = await svgToCanvas(svg, 2000);
+      printCanvas(canvas, "My colouring");
+    } catch { alert("Couldn't open the print window."); }
+  };
   if (view === "gallery") {
     return (
-      <div>
+      <div className="color-book color-book--gallery">
         <p className="cv-intro">Pick a sheet to colour — each one is packed with pictures! {COL_PAGES.length} sheets.</p>
         {["Colouring sheets", "Patterns"].map((grp) => (
           <div key={grp}>
@@ -1910,7 +2075,7 @@ function ColoringBook() {
   }
   if (upload) {
     return (
-      <div>
+      <div className="color-book">
         <div className="paint-bar"><button className="btn btn-ghost btn-sm" onClick={() => { setUpload(null); setView("gallery"); }}>← All sheets</button><b>🖼️ {upload.name}</b></div>
         <ImageColor src={api.workbenchImageUrl(upload.id)} />
       </div>
@@ -1918,14 +2083,23 @@ function ColoringBook() {
   }
   const page = COL_PAGES[pic];
   return (
-    <div>
+    <div className="color-book">
       <div className="paint-bar"><button className="btn btn-ghost btn-sm" onClick={() => setView("gallery")}>← All sheets</button><b>{page.emoji} {page.name}</b></div>
-      <div className="paint-bar">{COLOR_PALETTE.map((cc) => <button key={cc} className={"swatch" + (color === cc ? " on" : "")} style={{ background: cc }} onClick={() => setColor(cc)} />)}</div>
-      <div className="coloring-scroll">{renderCollage(page, true)}</div>
       <div className="paint-bar">
-        <button className="round-btn small" onClick={() => open((pic - 1 + COL_PAGES.length) % COL_PAGES.length)}>◀</button>
-        <button className="round-btn small" onClick={() => open((pic + 1) % COL_PAGES.length)}>▶</button>
+        {COLOR_PALETTE.map((cc) => <button key={cc} className={"swatch" + (color === cc ? " on" : "")} style={{ background: cc }} onClick={() => setColor(cc)} />)}
+        <span className="paint-sep" />
+        <button className="round-btn small" title="Previous sheet" onClick={() => open((pic - 1 + COL_PAGES.length) % COL_PAGES.length)}>◀</button>
+        <button className="round-btn small" title="Next sheet" onClick={() => open((pic + 1) % COL_PAGES.length)}>▶</button>
         <button className="btn btn-ghost btn-sm" onClick={() => setFills({})}>🗑️ Clear</button>
+        <button className="paint-action" onClick={saveSvg} title="Save as PNG">💾 Save</button>
+        <button className="paint-action" onClick={printSvg} title="Print this picture">🖨️ Print</button>
+      </div>
+      <div className="paint-wrap" ref={svgWrapRef}>
+        <div className="paint-stage paint-stage--svg"
+          ref={svgHostRef}
+          style={{ width: svgSize.w || undefined, height: svgSize.h || undefined }}>
+          {renderCollage(page, true)}
+        </div>
       </div>
     </div>
   );

@@ -324,8 +324,18 @@ main.wrap{padding-bottom:110px}
 .cv-overlay--full{padding:8px}
 .cv-sheet{width:min(820px,96vw);max-height:90vh;overflow:auto;background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:22px 24px 26px}
 /* Full-screen sheet for painting / colouring — the fixed 820px cap left the
-   canvas less than half the screen. */
-.cv-sheet--full{width:min(1800px,99vw);max-height:98vh;padding:14px 18px 18px;border-radius:18px}
+   canvas less than half the screen. Flex-column + overflow:hidden so the stage
+   fits the viewport without ever showing a scrollbar; the paint-wrap below
+   takes the remaining space and the stage is sized by JS to fit it. */
+.cv-sheet--full{width:min(1800px,99vw);height:98vh;max-height:98vh;padding:14px 18px 18px;border-radius:18px;display:flex;flex-direction:column;overflow:hidden}
+.cv-sheet--full > .cv-head{flex:0 0 auto;margin-bottom:10px}
+.cv-sheet--full > .paint,
+.cv-sheet--full > .img-color,
+.cv-sheet--full > .color-book{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.cv-sheet--full > .color-book--gallery{overflow:auto}  /* gallery view does scroll — many thumbnails */
+.cv-sheet--full .paint-bar{flex:0 0 auto}
+.cv-sheet--full .paint-ref,
+.cv-sheet--full .paint-bases{flex:0 0 auto}
 .cv-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .cv-head b{font-family:"Fredoka";font-weight:600;font-size:1.25rem;display:block}
 .cv-head .who{color:var(--ink-soft);font-weight:700;font-size:.82rem}
@@ -346,15 +356,25 @@ main.wrap{padding-bottom:110px}
    it overlaps a line, and the eraser (destination-out) only touches the paint
    layer so the picture itself is never damaged. `isolation:isolate` keeps the
    blend scoped — it must only mix with the base canvas, never with the page
-   or modal underneath. */
-.paint-stage{position:relative;isolation:isolate;width:100%;background:#fff;border:1px solid #F0E8DA;border-radius:16px;overflow:hidden;line-height:0;margin:4px auto 0}
-.paint-stage canvas{display:block;width:100%;height:auto;background:transparent}
+   or modal underneath.
+   The stage dimensions are set by JavaScript via useFitSize so the picture
+   always fits the available viewport space without any scrollbar. */
+.paint-wrap{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:center;overflow:hidden;padding:4px 0}
+.paint-stage{position:relative;isolation:isolate;background:#fff;border:1px solid #F0E8DA;border-radius:16px;overflow:hidden;line-height:0;margin:0 auto}
+.paint-stage canvas{display:block;width:100%;height:100%;background:transparent}
 .paint-stage .paint-base{position:relative;z-index:0}
 .paint-stage .paint-canvas{position:absolute;inset:0;z-index:1;touch-action:none;cursor:crosshair;background:transparent;border:0;border-radius:0}
 .paint-stage .paint-canvas--multiply{mix-blend-mode:multiply}
-/* --fit: coloring book uses the image's own aspect — don't cap width via
-   intrinsic canvas size, let the natural width fill. */
-.paint-stage--fit{max-width:100%;margin-inline:auto}
+/* --fit (ImageColor) and --svg (ColoringBook SVG) are selector hooks — all
+   sizing comes from the measured width/height inline style. */
+.paint-stage--fit,
+.paint-stage--svg{max-width:100%;max-height:100%}
+.paint-stage--svg{display:flex;align-items:center;justify-content:center}
+.paint-stage--svg > svg{width:100%;height:100%;display:block}
+/* Prominent, child-friendly Save / Print actions in the paint toolbar. */
+.paint-action{font-family:"Fredoka";font-weight:700;border:0;cursor:pointer;border-radius:999px;padding:9px 16px;font-size:.95rem;color:#fff;background:linear-gradient(180deg,var(--coral),var(--coral-deep));box-shadow:0 6px 14px -8px rgba(242,86,61,.8);transition:transform .12s ease}
+.paint-action:hover:not([disabled]){transform:translateY(-2px)}
+.paint-action[disabled]{opacity:.5;cursor:not-allowed}
 
 /* brain: file input + drill-down */
 .file-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
